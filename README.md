@@ -26,21 +26,23 @@ Sunday                   39 commits          ████████░░░�
 
 ```text
 💬 Programming Languages: 
-Python                   8 hrs 12 mins       ████████░░░░░░░░░░░░░░░░░   32.55 % 
-YAML                     5 hrs 26 mins       █████░░░░░░░░░░░░░░░░░░░░   21.57 % 
-Other                    4 hrs 6 mins        ████░░░░░░░░░░░░░░░░░░░░░   16.29 % 
-Markdown                 2 hrs 2 mins        ██░░░░░░░░░░░░░░░░░░░░░░░   08.11 % 
-KDL                      1 hr 17 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   05.12 % 
+Python                   11 hrs 41 mins      █████████░░░░░░░░░░░░░░░░   36.40 % 
+YAML                     5 hrs 34 mins       ████░░░░░░░░░░░░░░░░░░░░░   17.33 % 
+Other                    4 hrs 31 mins       ████░░░░░░░░░░░░░░░░░░░░░   14.10 % 
+Markdown                 2 hrs 32 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   07.90 % 
+Bash                     2 hrs 12 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   06.86 % 
 
 🔥 Editors: 
-VS Code                  23 hrs 7 mins       ███████████████████████░░   91.66 % 
-Codex CLI                1 hr 59 mins        ██░░░░░░░░░░░░░░░░░░░░░░░   07.91 % 
-Claude Code              6 mins              ░░░░░░░░░░░░░░░░░░░░░░░░░   00.43 % 
+VS Code                  28 hrs 48 mins      ██████████████████████░░░   89.71 % 
+Trae                     1 hr 44 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   05.44 % 
+Codex CLI                1 hr 25 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   04.43 % 
+Claude Code              8 mins              ░░░░░░░░░░░░░░░░░░░░░░░░░   00.42 % 
 
 💻 Operating System: 
-Linux                    25 hrs 13 mins      █████████████████████████   100.00 % 
+Linux                    24 hrs 18 mins      ███████████████████░░░░░░   75.69 % 
+Windows                  7 hrs 48 mins       ██████░░░░░░░░░░░░░░░░░░░   24.31 % 
 ```
 
 
- Last Updated on 28/06/2026 17:10:49 UTC
+ Last Updated on 28/06/2026 19:18:36 UTC
 <!--END_SECTION:waka-->

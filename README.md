@@ -26,19 +26,20 @@ Sunday                   71 commits          ██████░░░░░�
 
 ```text
 💬 Programming Languages: 
-Python                   21 hrs 43 mins      ██████████████░░░░░░░░░░░   56.72 % 
-Bash                     3 hrs 59 mins       ███░░░░░░░░░░░░░░░░░░░░░░   10.44 % 
-Other                    3 hrs               ██░░░░░░░░░░░░░░░░░░░░░░░   07.86 % 
-TOML                     2 hrs 51 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   07.47 % 
-Markdown                 1 hr 20 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   03.51 % 
+Python                   22 hrs 20 mins      ███████████████░░░░░░░░░░   58.56 % 
+Bash                     3 hrs 14 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   08.51 % 
+Other                    2 hrs 24 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   06.33 % 
+Markdown                 1 hr 30 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   03.95 % 
+TOML                     1 hr 30 mins        █░░░░░░░░░░░░░░░░░░░░░░░░   03.94 % 
 
 🔥 Editors: 
-VS Code                  38 hrs 17 mins      █████████████████████████   100.00 % 
+VS Code                  37 hrs 16 mins      ████████████████████████░   97.71 % 
+Codex CLI                52 mins             █░░░░░░░░░░░░░░░░░░░░░░░░   02.29 % 
 
 💻 Operating System: 
-Linux                    38 hrs 17 mins      █████████████████████████   100.00 % 
+Linux                    38 hrs 8 mins       █████████████████████████   100.00 % 
 ```
 
 
- Last Updated on 20/07/2026 18:02:06 UTC
+ Last Updated on 20/07/2026 20:20:08 UTC
 <!--END_SECTION:waka-->

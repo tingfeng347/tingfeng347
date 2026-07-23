@@ -136,5 +136,5 @@ Linux                    37 hrs 25 mins      ███████████�
 <br/>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/profile-3d-contrib/profile-night-rainbow.svg" />
+  <img src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-rainbow.svg" />
 </p>

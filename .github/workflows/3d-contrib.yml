@@ -11,25 +11,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: generate-github-profile-3d-contrib
     steps:
       - uses: actions/checkout@v4
 
-      - uses: yoshi389111/github-profile-3d-contrib@master
+      - uses: yoshi389111/github-profile-3d-contrib@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USERNAME: tingfeng347
-        with:
-          outputs: |
-            profile-3d-contrib/profile-night-rainbow.svg
+          USERNAME: ${{ github.repository_owner }}
 
-      - name: Push to profile-3d-contrib branch
+      - name: Commit & Push
         run: |
-          cp -r profile-3d-contrib /tmp/profile-3d-contrib
-          git fetch origin profile-3d-contrib || true
-          git checkout profile-3d-contrib 2>/dev/null || git checkout --orphan profile-3d-contrib
-          cp -r /tmp/profile-3d-contrib/* profile-3d-contrib/ 2>/dev/null || cp -r /tmp/profile-3d-contrib/* ./
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add -A
-          git diff --staged --quiet || git commit -m "Update 3D contrib graph"
-          git push origin profile-3d-contrib --force
+          git add -A .
+          if git commit -m "update 3D contrib graph"; then
+            git push
+          fi

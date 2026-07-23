@@ -1,49 +1,44 @@
-<h1 align="center"> Hi There <img src="https://raw.githubusercontent.com/ABSphreak/ABSphreak/master/gifs/Hi.gif" width="36px" /> , I'm tingfeng347 </h1>
+<h1 align="center">Hi There 👋, I'm tingfeng347</h1>
 
 <p align="center">
-  <samp>
-    <b>🎯 聚焦 · Full-Stack & AI Agent Developer</b>
-    <br>
-    热爱用代码解决问题 · AI Agent · 开源工具 · 知识图谱
-  </samp>
-</p>
-
-<p align="center">
-  <!-- Languages -->
-  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white" />
-  <img src="https://img.shields.io/badge/Shell-4EAA25?style=flat-square&logo=gnubash&logoColor=white" />
-  <br>
-  <!-- Frameworks -->
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/Vue.js-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" />
-  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/LangGraph-1C3C3C?style=flat-square&logo=langchain&logoColor=white" />
-  <img src="https://img.shields.io/badge/LlamaIndex-4B0082?style=flat-square&logo=openai&logoColor=white" />
-  <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" />
-  <br>
-  <!-- Infra & Tools -->
-  <img src="https://img.shields.io/badge/vLLM-000000?style=flat-square&logo=nvidia&logoColor=white" />
-  <img src="https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white" />
-  <img src="https://img.shields.io/badge/Neo4j-4581C3?style=flat-square&logo=neo4j&logoColor=white" />
-  <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" />
-  <img src="https://img.shields.io/badge/VS_Code-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" />
-  <img src="https://img.shields.io/badge/Agent-6C5CE7?style=flat-square&logo=robotframework&logoColor=white" />
+  <img
+    src="./assets/typing-intro.svg"
+    width="760"
+    alt="Animated developer introduction"
+  />
 </p>
 
 <br/>
 
----
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Java-F89820?style=flat-square&logo=openjdk&logoColor=white" alt="Java" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Shell-4EAA25?style=flat-square&logo=gnubash&logoColor=white" alt="Shell" />
+  <br/>
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Vue.js-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue.js" />
+  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/LangGraph-2C3E50?style=flat-square&logo=langchain&logoColor=white" alt="LangGraph" />
+  <img src="https://img.shields.io/badge/LlamaIndex-6A0DAD?style=flat-square&logo=openai&logoColor=white" alt="LlamaIndex" />
+  <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch" />
+  <br/>
+  <img src="https://img.shields.io/badge/vLLM-000000?style=flat-square&logo=nvidia&logoColor=white" alt="vLLM" />
+  <img src="https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white" alt="Git" />
+  <img src="https://img.shields.io/badge/Neo4j-4581C3?style=flat-square&logo=neo4j&logoColor=white" alt="Neo4j" />
+  <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" />
+  <img src="https://img.shields.io/badge/VS_Code-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" alt="VS Code" />
+  <img src="https://img.shields.io/badge/Agent-6C5CE7?style=flat-square&logo=robotframework&logoColor=white" alt="Agent" />
+</p>
 
 <br/>
+
+<h2 align="center">Weekly Coding Activity</h2>
 
 <!--START_SECTION:waka-->
-![Lines of code](https://img.shields.io/badge/From%20Hello%20World%20I%27ve%20Written-1.81%20million%20lines%20of%20code-blue?style=flat)
-
 **I'm a Night 🦉** 
 
 ```text
@@ -64,7 +59,6 @@ Saturday                 40 commits          ███░░░░░░░░�
 Sunday                   71 commits          ██████░░░░░░░░░░░░░░░░░░░   24.07 % 
 ```
 
-
 📊 **This Week I Spent My Time On** 
 
 ```text
@@ -79,9 +73,6 @@ TypeScript               2 hrs 4 mins        █░░░░░░░░░░�
 VS Code                  33 hrs 29 mins      ██████████████████████░░░   89.52 % 
 Codex CLI                3 hrs 55 mins       ███░░░░░░░░░░░░░░░░░░░░░░   10.48 % 
 Claude Code              0 secs              ░░░░░░░░░░░░░░░░░░░░░░░░░   00.00 % 
-
-💻 Operating System: 
-Linux                    37 hrs 25 mins      █████████████████████████   100.00 % 
 ```
 
 
@@ -89,6 +80,8 @@ Linux                    37 hrs 25 mins      ███████████�
 <!--END_SECTION:waka-->
 
 <br/>
+
+<h2 align="center">Contribution Snake</h2>
 
 <div align="center">
   <picture>
@@ -109,6 +102,29 @@ Linux                    37 hrs 25 mins      ███████████�
 
 <br/>
 
+<h2 align="center">3D Contributions</h2>
+
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-rainbow.svg" />
+  <picture>
+    <!-- 3D_DARK_THEME -->
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-rainbow.svg"
+    />
+    <!-- 3D_LIGHT_THEME -->
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
+    />
+    <!-- 3D_FALLBACK_THEME -->
+    <img
+      width="100%"
+      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
+      alt="3D contribution graph"
+    />
+  </picture>
+</p>
+
+<p align="center">
+  <samp>Thanks for visiting — let's build useful things.</samp>
 </p>

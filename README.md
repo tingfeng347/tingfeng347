@@ -37,12 +37,6 @@
 
 <br/>
 
-<p align="center">
-  <img src="https://github-profile-trophy.vercel.app/?username=tingfeng347&column=8&margin-w=8&margin-h=8&no-frame=true&no-bg=true" />
-</p>
-
-<br/>
-
 ---
 
 <br/>

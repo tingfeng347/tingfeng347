@@ -1,0 +1,26 @@
+name: Generate Snake
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Platane/snk@v3
+        with:
+          github_user_name: tingfeng347
+          outputs: |
+            dist/github-contribution-grid-snake.svg?color_snake=#539BF5
+            dist/github-contribution-grid-snake-dark.svg?color_snake=#539BF5&color_dots=#161b22,#0e4429,#006d32,#26a641,#39d353
+
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: output

@@ -37,6 +37,12 @@
 
 <br/>
 
+<p align="center">
+  <img src="https://komarev.com/ghpvc/?username=tingfeng347&label=Profile%20views&color=0e75b6&style=flat" alt="Profile views" />
+</p>
+
+<br/>
+
 ---
 
 <br/>
@@ -85,3 +91,17 @@ Linux                    37 hrs 25 mins      ███████████�
     />
   </picture>
 </div>
+
+<br/>
+
+<p align="center">
+  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=tingfeng347&theme=default" />
+  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=tingfeng347&theme=default" />
+  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=tingfeng347&theme=default" />
+</p>
+
+<br/>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/profile-3d-contrib/profile-night-rainbow.svg" />
+</p>

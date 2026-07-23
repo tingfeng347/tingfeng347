@@ -101,7 +101,7 @@ Linux                    37 hrs 25 mins      ███████████�
       srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
     />
     <img
-      alt="YiHarvest contribution snake"
+      alt="contribution snake"
       src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
     />
   </picture>

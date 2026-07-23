@@ -38,7 +38,7 @@
 <br/>
 
 <p align="center">
-  <img height="160em" src="https://github-readme-stats.vercel.app/api?username=tingfeng347&show_icons=true&theme=default&hide_border=true&count_private=true&include_all_commits=true" />
+  <img height="160em" src="https://github-readme-stats.vercel.app/api?username=tingfeng347&show_icons=true&theme=default&hide_border=true" />
   <img height="160em" src="https://github-readme-stats.vercel.app/api/top-langs/?username=tingfeng347&layout=compact&theme=default&hide_border=true&langs_count=8" />
 </p>
 

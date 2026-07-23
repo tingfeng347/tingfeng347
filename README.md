@@ -50,6 +50,39 @@
 <!--START_SECTION:waka-->
 ![Lines of code](https://img.shields.io/badge/From%20Hello%20World%20I%27ve%20Written-1.81%20million%20lines%20of%20code-blue?style=flat)
 
+**🐱 My GitHub Data** 
+
+> 📦 192.0 kB Used in GitHub's Storage 
+ > 
+> 🏆 286 Contributions in the Year 2026
+ > 
+> 🚫 Not Opted to Hire
+ > 
+> 📜 73 Public Repositories 
+ > 
+> 🔑 6 Private Repositories 
+ > 
+**I'm a Night 🦉** 
+
+```text
+🌞 Morning                49 commits          ████░░░░░░░░░░░░░░░░░░░░░   16.61 % 
+🌆 Daytime                90 commits          ████████░░░░░░░░░░░░░░░░░   30.51 % 
+🌃 Evening                142 commits         ████████████░░░░░░░░░░░░░   48.14 % 
+🌙 Night                  14 commits          █░░░░░░░░░░░░░░░░░░░░░░░░   04.75 % 
+```
+📅 **I'm Most Productive on Thursday** 
+
+```text
+Monday                   25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.47 % 
+Tuesday                  25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.47 % 
+Wednesday                48 commits          ████░░░░░░░░░░░░░░░░░░░░░   16.27 % 
+Thursday                 73 commits          ██████░░░░░░░░░░░░░░░░░░░   24.75 % 
+Friday                   13 commits          █░░░░░░░░░░░░░░░░░░░░░░░░   04.41 % 
+Saturday                 40 commits          ███░░░░░░░░░░░░░░░░░░░░░░   13.56 % 
+Sunday                   71 commits          ██████░░░░░░░░░░░░░░░░░░░   24.07 % 
+```
+
+
 📊 **This Week I Spent My Time On** 
 
 ```text
@@ -70,7 +103,7 @@ Linux                    37 hrs 25 mins      ███████████�
 ```
 
 
- Last Updated on 23/07/2026 14:39:11 UTC
+ Last Updated on 23/07/2026 15:10:14 UTC
 <!--END_SECTION:waka-->
 
 <br/>

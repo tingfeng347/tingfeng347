@@ -37,12 +37,6 @@
 
 <br/>
 
-<p align="center">
-  <img src="https://komarev.com/ghpvc/?username=tingfeng347&label=Profile%20views&color=0e75b6&style=flat" alt="Profile views" />
-</p>
-
-<br/>
-
 ---
 
 <br/>
@@ -50,18 +44,6 @@
 <!--START_SECTION:waka-->
 ![Lines of code](https://img.shields.io/badge/From%20Hello%20World%20I%27ve%20Written-1.81%20million%20lines%20of%20code-blue?style=flat)
 
-**🐱 My GitHub Data** 
-
-> 📦 192.0 kB Used in GitHub's Storage 
- > 
-> 🏆 286 Contributions in the Year 2026
- > 
-> 🚫 Not Opted to Hire
- > 
-> 📜 73 Public Repositories 
- > 
-> 🔑 6 Private Repositories 
- > 
 **I'm a Night 🦉** 
 
 ```text
@@ -128,9 +110,9 @@ Linux                    37 hrs 25 mins      ███████████�
 <br/>
 
 <p align="center">
-  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=tingfeng347&theme=default" />
-  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=tingfeng347&theme=default" />
-  <img height="160em" src="https://github-profile-summary-cards.vercel.app/api/cards/most-commit-language?username=tingfeng347&theme=default" />
+  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/3-stats.svg" />
+  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/1-repos-per-language.svg" />
+  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/2-most-commit-language.svg" />
 </p>
 
 <br/>

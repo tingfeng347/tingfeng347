@@ -110,13 +110,5 @@ Linux                    37 hrs 25 mins      ███████████�
 <br/>
 
 <p align="center">
-  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/3-stats.svg" />
-  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/1-repos-per-language.svg" />
-  <img height="160em" src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-summary-card-output/default/2-most-commit-language.svg" />
-</p>
-
-<br/>
-
-<p align="center">
   <img src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-rainbow.svg" />
 </p>

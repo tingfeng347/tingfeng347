@@ -55,27 +55,6 @@
 <!--START_SECTION:waka-->
 ![Lines of code](https://img.shields.io/badge/From%20Hello%20World%20I%27ve%20Written-1.81%20million%20lines%20of%20code-blue?style=flat)
 
-**I'm a Night 🦉** 
-
-```text
-🌞 Morning                49 commits          ████░░░░░░░░░░░░░░░░░░░░░   16.72 % 
-🌆 Daytime                90 commits          ████████░░░░░░░░░░░░░░░░░   30.72 % 
-🌃 Evening                140 commits         ████████████░░░░░░░░░░░░░   47.78 % 
-🌙 Night                  14 commits          █░░░░░░░░░░░░░░░░░░░░░░░░   04.78 % 
-```
-📅 **I'm Most Productive on Thursday** 
-
-```text
-Monday                   25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.53 % 
-Tuesday                  25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.53 % 
-Wednesday                48 commits          ████░░░░░░░░░░░░░░░░░░░░░   16.38 % 
-Thursday                 71 commits          ██████░░░░░░░░░░░░░░░░░░░   24.23 % 
-Friday                   13 commits          █░░░░░░░░░░░░░░░░░░░░░░░░   04.44 % 
-Saturday                 40 commits          ███░░░░░░░░░░░░░░░░░░░░░░   13.65 % 
-Sunday                   71 commits          ██████░░░░░░░░░░░░░░░░░░░   24.23 % 
-```
-
-
 📊 **This Week I Spent My Time On** 
 
 ```text
@@ -96,7 +75,7 @@ Linux                    37 hrs 25 mins      ███████████�
 ```
 
 
- Last Updated on 23/07/2026 13:55:16 UTC
+ Last Updated on 23/07/2026 14:39:11 UTC
 <!--END_SECTION:waka-->
 
 <br/>

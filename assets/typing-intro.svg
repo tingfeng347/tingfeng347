@@ -15,10 +15,21 @@
   <defs>
     <style>
       .typing-text {
-        fill: #ffffff;
+        fill: #24292f;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
         font-weight: 600;
         letter-spacing: 0.35px;
+      }
+
+      .typing-cursor {
+        fill: #24292f;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .typing-text,
+        .typing-cursor {
+          fill: #f0f6fc;
+        }
       }
     </style>
 
@@ -52,6 +63,8 @@
     x="143"
     y="23"
     font-size="18"
+    textLength="500"
+    lengthAdjust="spacingAndGlyphs"
     clip-path="url(#line-one-reveal)"
   >🎯 Focused · Full-Stack &amp; AI Agent Developer</text>
 
@@ -61,10 +74,12 @@
     y="56"
     font-size="17"
     font-weight="500"
+    textLength="620"
+    lengthAdjust="spacingAndGlyphs"
     clip-path="url(#line-two-reveal)"
   >Building Coding Agents · Open Source · Knowledge Graphs</text>
 
-  <rect x="143" y="5" width="2" height="22" rx="1" fill="#ffffff">
+  <rect class="typing-cursor" x="143" y="5" width="2" height="22" rx="1">
     <animate
       attributeName="x"
       values="143;643;82;702;702;143"

@@ -1,73 +1,141 @@
 <svg
   xmlns="http://www.w3.org/2000/svg"
   width="760"
-  height="44"
-  viewBox="0 0 760 44"
+  height="84"
+  viewBox="0 0 760 84"
   role="img"
   aria-labelledby="title description"
 >
   <title id="title">Animated closing message</title>
   <desc id="description">
-    A closing message types out, remains visible, and then repeats.
+    Colorful scrambled characters resolve into a closing thank-you message.
   </desc>
 
   <defs>
     <style>
-      .typing-text {
-        fill: #24292f;
+      .message {
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 24px;
         font-weight: 600;
-        letter-spacing: 0.35px;
+        letter-spacing: 0;
       }
 
-      .typing-cursor {
-        fill: #24292f;
+      .final-message,
+      .cursor {
+        fill: #102a43;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .typing-text,
-        .typing-cursor {
-          fill: #f0f6fc;
+      .scramble-frame {
+        opacity: 0;
+        animation: scramble-swap 0.44s steps(1, end) infinite;
+      }
+
+      .frame-b { animation-delay: -0.11s; }
+      .frame-c { animation-delay: -0.22s; }
+      .frame-d { animation-delay: -0.33s; }
+
+      .reduced-copy {
+        display: none;
+      }
+
+      @keyframes scramble-swap {
+        0%, 24.99% { opacity: 1; }
+        25%, 100% { opacity: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .animated-copy,
+        .cursor {
+          display: none;
+        }
+
+        .reduced-copy {
+          display: block;
         }
       }
     </style>
 
-    <clipPath id="message-reveal">
-      <rect x="135" y="0" width="0" height="44">
+    <clipPath id="resolved-reveal">
+      <rect x="66" y="0" width="0" height="84">
         <animate
           attributeName="width"
-          values="0;490;490;0"
-          keyTimes="0;0.45;0.92;1"
-          dur="8s"
+          values="0;0;628;628;0"
+          keyTimes="0;0.08;0.39;0.985;1"
+          dur="7s"
+          repeatCount="indefinite"
+        />
+      </rect>
+    </clipPath>
+
+    <clipPath id="scramble-tail">
+      <rect x="66" y="0" width="628" height="84">
+        <animate
+          attributeName="x"
+          values="66;66;694;694;66"
+          keyTimes="0;0.08;0.39;0.985;1"
+          dur="7s"
+          repeatCount="indefinite"
+        />
+        <animate
+          attributeName="width"
+          values="628;628;0;0;628"
+          keyTimes="0;0.08;0.39;0.985;1"
+          dur="7s"
           repeatCount="indefinite"
         />
       </rect>
     </clipPath>
   </defs>
 
-  <text
-    class="typing-text"
-    x="135"
-    y="28"
-    font-size="17"
-    textLength="490"
-    lengthAdjust="spacingAndGlyphs"
-    clip-path="url(#message-reveal)"
-  >Thanks for visiting — let's build useful things.</text>
+  <rect x="0.5" y="0.5" width="759" height="83" rx="18" fill="#ffffff" stroke="#d8dee4" />
 
-  <rect class="typing-cursor" x="135" y="8" width="2" height="24" rx="1">
-    <animate
-      attributeName="x"
-      values="135;625;625;135"
-      keyTimes="0;0.45;0.92;1"
-      dur="8s"
-      repeatCount="indefinite"
-    />
-    <animate
-      attributeName="opacity"
-      values="1;0;1"
-      dur="0.8s"
-      repeatCount="indefinite"
-    />
-  </rect>
+  <g class="animated-copy">
+    <g clip-path="url(#scramble-tail)">
+      <text class="message scramble-frame frame-a" x="66" y="51" textLength="628" lengthAdjust="spacingAndGlyphs">
+        <tspan fill="#18a999">Q7!mK</tspan><tspan fill="#d1495b">xP@4s</tspan><tspan fill="#5b5fef">V2#nL</tspan><tspan fill="#f4a261">8z&amp;R0</tspan><tspan fill="#2a9d8f">cY$6e</tspan><tspan fill="#e76f51">J1?uB</tspan><tspan fill="#8f5bd5">wN%3i</tspan><tspan fill="#3a86ff">G9*oT</tspan><tspan fill="#84a98c">hD=5f</tspan>
+      </text>
+      <text class="message scramble-frame frame-b" x="66" y="51" textLength="628" lengthAdjust="spacingAndGlyphs">
+        <tspan fill="#e76f51">m#8Qa</tspan><tspan fill="#3a86ff">2X!vR</tspan><tspan fill="#84a98c">p7$Ld</tspan><tspan fill="#d1495b">F0&amp;k9</tspan><tspan fill="#8f5bd5">zW@1c</tspan><tspan fill="#18a999">H6?yN</tspan><tspan fill="#f4a261">4s%Ju</tspan><tspan fill="#5b5fef">B3=tG</tspan><tspan fill="#2a9d8f">iV*5e</tspan>
+      </text>
+      <text class="message scramble-frame frame-c" x="66" y="51" textLength="628" lengthAdjust="spacingAndGlyphs">
+        <tspan fill="#5b5fef">V4@tP</tspan><tspan fill="#2a9d8f">n9!Ks</tspan><tspan fill="#f4a261">0q&amp;Y6</tspan><tspan fill="#8f5bd5">L2#eM</tspan><tspan fill="#3a86ff">x7$Ra</tspan><tspan fill="#d1495b">D1?wg</tspan><tspan fill="#84a98c">F8%uC</tspan><tspan fill="#e76f51">h5=Zj</tspan><tspan fill="#18a999">B3*oN</tspan>
+      </text>
+      <text class="message scramble-frame frame-d" x="66" y="51" textLength="628" lengthAdjust="spacingAndGlyphs">
+        <tspan fill="#84a98c">k1%Ws</tspan><tspan fill="#f4a261">G6?mB</tspan><tspan fill="#18a999">v3=Qe</tspan><tspan fill="#d1495b">9z!H2</tspan><tspan fill="#5b5fef">aR@7x</tspan><tspan fill="#2a9d8f">N4&amp;uJ</tspan><tspan fill="#e76f51">c0#Tf</tspan><tspan fill="#3a86ff">P8$yL</tspan><tspan fill="#8f5bd5">d5*Vi</tspan>
+      </text>
+    </g>
+
+    <text
+      class="message final-message"
+      x="66"
+      y="51"
+      textLength="628"
+      lengthAdjust="spacingAndGlyphs"
+      clip-path="url(#resolved-reveal)"
+    >Thanks for visiting — let's build useful things.</text>
+
+    <rect class="cursor" x="66" y="24" width="3" height="34" rx="1.5">
+      <animate
+        attributeName="x"
+        values="66;66;694;694;66"
+        keyTimes="0;0.08;0.39;0.985;1"
+        dur="7s"
+        repeatCount="indefinite"
+      />
+      <animate
+        attributeName="opacity"
+        values="1;0;1"
+        dur="0.82s"
+        repeatCount="indefinite"
+      />
+    </rect>
+  </g>
+
+  <text
+    class="message final-message reduced-copy"
+    x="66"
+    y="51"
+    textLength="628"
+    lengthAdjust="spacingAndGlyphs"
+  >Thanks for visiting — let's build useful things.</text>
 </svg>

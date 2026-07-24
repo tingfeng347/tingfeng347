@@ -20,10 +20,22 @@
         letter-spacing: 0;
       }
 
+      .panel {
+        fill: #ffffff;
+        stroke: #d0d7de;
+      }
+
       .final-message,
       .cursor {
         fill: #102a43;
       }
+
+      .scramble-frame tspan:nth-child(6n + 1) { fill: #0f8f83; }
+      .scramble-frame tspan:nth-child(6n + 2) { fill: #cf4561; }
+      .scramble-frame tspan:nth-child(6n + 3) { fill: #5256d9; }
+      .scramble-frame tspan:nth-child(6n + 4) { fill: #d97706; }
+      .scramble-frame tspan:nth-child(6n + 5) { fill: #1783c7; }
+      .scramble-frame tspan:nth-child(6n + 6) { fill: #8b5db7; }
 
       .scramble-frame {
         opacity: 0;
@@ -41,6 +53,25 @@
       @keyframes scramble-swap {
         0%, 24.99% { opacity: 1; }
         25%, 100% { opacity: 0; }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .panel {
+          fill: #161b22;
+          stroke: #30363d;
+        }
+
+        .final-message,
+        .cursor {
+          fill: #e6edf3;
+        }
+
+        .scramble-frame tspan:nth-child(6n + 1) { fill: #39d0c3; }
+        .scramble-frame tspan:nth-child(6n + 2) { fill: #ff7b93; }
+        .scramble-frame tspan:nth-child(6n + 3) { fill: #a5a8ff; }
+        .scramble-frame tspan:nth-child(6n + 4) { fill: #f2cc60; }
+        .scramble-frame tspan:nth-child(6n + 5) { fill: #58a6ff; }
+        .scramble-frame tspan:nth-child(6n + 6) { fill: #d2a8ff; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -87,7 +118,7 @@
     </clipPath>
   </defs>
 
-  <rect x="0.5" y="0.5" width="759" height="83" rx="18" fill="#ffffff" stroke="#d8dee4" />
+  <rect class="panel" x="0.5" y="0.5" width="759" height="83" rx="18" />
 
   <g class="animated-copy">
     <g clip-path="url(#scramble-tail)">

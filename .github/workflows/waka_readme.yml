@@ -41,3 +41,25 @@ jobs:
           SHOW_PROJECTS: "False"
           SHOW_LANGUAGE_PER_REPO: "False"
           SYMBOL_VERSION: "2"
+
+      - name: Check out the updated README
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Correct the commit activity heading
+        run: python .github/scripts/fix_waka_activity_heading.py README.md
+
+      - name: Commit the corrected heading
+        shell: bash
+        run: |
+          if git diff --quiet -- README.md; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "fix(README): correct commit activity heading"
+          git push

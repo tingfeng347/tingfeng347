@@ -1,0 +1,22 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="760"
+  height="16"
+  viewBox="0 0 760 16"
+  preserveAspectRatio="none"
+  role="presentation"
+>
+  <style>
+    .divider {
+      stroke: #d0d7de;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .divider {
+        stroke: #30363d;
+      }
+    }
+  </style>
+
+  <line class="divider" x1="0" y1="8" x2="760" y2="8" stroke-width="1" />
+</svg>

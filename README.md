@@ -129,7 +129,14 @@ Linux                    39 hrs 49 mins      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿�
   </picture>
 </p>
 
-<hr/>
+<p align="center">
+  <img
+    src="./assets/section-divider.svg"
+    width="100%"
+    height="16"
+    alt=""
+  />
+</p>
 
 <p align="center">
   <img

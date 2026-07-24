@@ -42,21 +42,21 @@
 **I'm a Night 🦉** 
 
 ```text
-🌞 Morning                55 commits          █████░░░░░░░░░░░░░░░░░░░░   18.27 % 
-🌆 Daytime                90 commits          ███████░░░░░░░░░░░░░░░░░░   29.90 % 
-🌃 Evening                142 commits         ████████████░░░░░░░░░░░░░   47.18 % 
-🌙 Night                  14 commits          █░░░░░░░░░░░░░░░░░░░░░░░░   04.65 % 
+Morning           55 commits      ███░░░░░░░░░░░░  18.27 %
+Daytime           90 commits      ████░░░░░░░░░░░  29.90 %
+Evening           142 commits     ███████░░░░░░░░  47.18 %
+Night             14 commits      █░░░░░░░░░░░░░░  04.65 %
 ```
 📅 **I'm Most Productive on Thursday** 
 
 ```text
-Monday                   25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.31 % 
-Tuesday                  25 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   08.31 % 
-Wednesday                48 commits          ████░░░░░░░░░░░░░░░░░░░░░   15.95 % 
-Thursday                 73 commits          ██████░░░░░░░░░░░░░░░░░░░   24.25 % 
-Friday                   19 commits          ██░░░░░░░░░░░░░░░░░░░░░░░   06.31 % 
-Saturday                 40 commits          ███░░░░░░░░░░░░░░░░░░░░░░   13.29 % 
-Sunday                   71 commits          ██████░░░░░░░░░░░░░░░░░░░   23.59 % 
+Monday            25 commits      █░░░░░░░░░░░░░░  08.31 %
+Tuesday           25 commits      █░░░░░░░░░░░░░░  08.31 %
+Wednesday         48 commits      ██░░░░░░░░░░░░░  15.95 %
+Thursday          73 commits      ████░░░░░░░░░░░  24.25 %
+Friday            19 commits      █░░░░░░░░░░░░░░  06.31 %
+Saturday          40 commits      ██░░░░░░░░░░░░░  13.29 %
+Sunday            71 commits      ████░░░░░░░░░░░  23.59 %
 ```
 
 
@@ -64,16 +64,16 @@ Sunday                   71 commits          ██████░░░░░�
 
 ```text
 💬 Programming Languages: 
-Python                   16 hrs 31 mins      ██████████░░░░░░░░░░░░░░░   41.48 % 
-Markdown                 4 hrs 46 mins       ███░░░░░░░░░░░░░░░░░░░░░░   11.98 % 
-Bash                     4 hrs 29 mins       ███░░░░░░░░░░░░░░░░░░░░░░   11.28 % 
-Other                    3 hrs 38 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   09.13 % 
-TypeScript               2 hrs 19 mins       █░░░░░░░░░░░░░░░░░░░░░░░░   05.82 % 
+Python            16 hrs 31 mins  ██████░░░░░░░░░  41.48 %
+Markdown          4 hrs 46 mins   ██░░░░░░░░░░░░░  11.98 %
+Bash              4 hrs 29 mins   ██░░░░░░░░░░░░░  11.28 %
+Other             3 hrs 38 mins   █░░░░░░░░░░░░░░  09.13 %
+TypeScript        2 hrs 19 mins   █░░░░░░░░░░░░░░  05.82 %
 
 🔥 Editors: 
-VS Code                  35 hrs 54 mins      ███████████████████████░░   90.16 % 
-Codex CLI                3 hrs 55 mins       ██░░░░░░░░░░░░░░░░░░░░░░░   09.84 % 
-Claude Code              0 secs              ░░░░░░░░░░░░░░░░░░░░░░░░░   00.00 % 
+VS Code           35 hrs 54 mins  ██████████████░  90.16 %
+Codex CLI         3 hrs 55 mins   █░░░░░░░░░░░░░░  09.84 %
+Claude Code       0 secs          ░░░░░░░░░░░░░░░  00.00 %
 ```
 
 

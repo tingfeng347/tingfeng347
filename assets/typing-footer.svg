@@ -1,0 +1,73 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="760"
+  height="44"
+  viewBox="0 0 760 44"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Animated closing message</title>
+  <desc id="description">
+    A closing message types out, remains visible, and then repeats.
+  </desc>
+
+  <defs>
+    <style>
+      .typing-text {
+        fill: #24292f;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-weight: 600;
+        letter-spacing: 0.35px;
+      }
+
+      .typing-cursor {
+        fill: #24292f;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .typing-text,
+        .typing-cursor {
+          fill: #f0f6fc;
+        }
+      }
+    </style>
+
+    <clipPath id="message-reveal">
+      <rect x="135" y="0" width="0" height="44">
+        <animate
+          attributeName="width"
+          values="0;490;490;0"
+          keyTimes="0;0.45;0.92;1"
+          dur="8s"
+          repeatCount="indefinite"
+        />
+      </rect>
+    </clipPath>
+  </defs>
+
+  <text
+    class="typing-text"
+    x="135"
+    y="28"
+    font-size="17"
+    textLength="490"
+    lengthAdjust="spacingAndGlyphs"
+    clip-path="url(#message-reveal)"
+  >Thanks for visiting — let's build useful things.</text>
+
+  <rect class="typing-cursor" x="135" y="8" width="2" height="24" rx="1">
+    <animate
+      attributeName="x"
+      values="135;625;625;135"
+      keyTimes="0;0.45;0.92;1"
+      dur="8s"
+      repeatCount="indefinite"
+    />
+    <animate
+      attributeName="opacity"
+      values="1;0;1"
+      dur="0.8s"
+      repeatCount="indefinite"
+    />
+  </rect>
+</svg>

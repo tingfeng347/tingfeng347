@@ -127,5 +127,9 @@ Claude Code              0 secs              ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 </p>
 
 <p align="center">
-  <samp>Thanks for visiting — let's build useful things.</samp>
+  <img
+    src="./assets/typing-footer.svg"
+    width="760"
+    alt="Thanks for visiting — let's build useful things."
+  />
 </p>

@@ -129,6 +129,8 @@ Linux                    39 hrs 49 mins      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿�
   </picture>
 </p>
 
+<hr/>
+
 <p align="center">
   <img
     src="./assets/typing-footer.svg"

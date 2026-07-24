@@ -13,17 +13,15 @@ jobs:
     name: Update Readme with Metrics
     runs-on: ubuntu-latest
     steps:
-      - name: Check out formatter
-        uses: actions/checkout@v6
-
       - name: Update README with metrics
         uses: anmol098/waka-readme-stats@master
         env:
           GIT_CONFIG_COUNT: "2"
-          GIT_CONFIG_KEY_0: filter.compact-waka.clean
-          GIT_CONFIG_VALUE_0: python3 /github/workspace/.github/scripts/compact_waka_stats.py
-          GIT_CONFIG_KEY_1: filter.compact-waka.smudge
-          GIT_CONFIG_VALUE_1: cat
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: ""
+          GIT_CONFIG_KEY_1: credential.helper
+          GIT_CONFIG_VALUE_1: '!f() { echo username=x-access-token; echo "password=$INPUT_GH_TOKEN"; }; f'
+          GIT_TERMINAL_PROMPT: "0"
           INPUT_GH_USER: ${{ github.repository_owner }}
         with:
           WAKATIME_API_KEY: ${{ secrets.WAKATIME_API_KEY }}
@@ -42,3 +40,4 @@ jobs:
           SHOW_EDITORS: "True"
           SHOW_PROJECTS: "False"
           SHOW_LANGUAGE_PER_REPO: "False"
+          SYMBOL_VERSION: "2"

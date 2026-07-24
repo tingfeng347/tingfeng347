@@ -45,6 +45,8 @@ def fix_heading(readme: str) -> str:
     if replacements != 1:
         raise ValueError("Generated commit activity heading was not found")
 
+    updated_body = "\n".join(line.rstrip() for line in updated_body.split("\n"))
+
     return (
         readme[: section_match.start("body")]
         + updated_body

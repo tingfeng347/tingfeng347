@@ -13,10 +13,7 @@ ACTIVITY_RE = re.compile(
     r"\b(?P<period>Morning|Daytime|Evening|Night)\s+"
     r"(?P<commits>\d+)\s+commits\b"
 )
-HEADING_RE = re.compile(
-    r"^\*\*I'm (?:an Early|a Night|most active (?:in the Morning|during the Daytime|in the Evening|at Night))[^\n]*\*\*$",
-    re.MULTILINE,
-)
+BOLD_HEADING_RE = re.compile(r"^[ \t]*\*\*[^\r\n]+\*\*[ \t]*$", re.MULTILINE)
 
 HEADINGS = {
     "Morning": "**I'm most active in the Morning 🌞**",
@@ -41,9 +38,20 @@ def fix_heading(readme: str) -> str:
         raise ValueError(f"Missing commit periods: {', '.join(sorted(missing))}")
 
     dominant_period = max(HEADINGS, key=activity.__getitem__)
-    updated_body, replacements = HEADING_RE.subn(HEADINGS[dominant_period], body, count=1)
-    if replacements != 1:
+    commit_block_start = body.find("```text")
+    if commit_block_start == -1:
+        raise ValueError("Generated commit activity block was not found")
+
+    heading_matches = list(BOLD_HEADING_RE.finditer(body, 0, commit_block_start))
+    if len(heading_matches) != 1:
         raise ValueError("Generated commit activity heading was not found")
+
+    heading_match = heading_matches[0]
+    updated_body = (
+        body[: heading_match.start()]
+        + HEADINGS[dominant_period]
+        + body[heading_match.end() :]
+    )
 
     updated_body = "\n".join(line.rstrip() for line in updated_body.split("\n"))
 

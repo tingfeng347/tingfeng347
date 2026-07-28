@@ -115,17 +115,17 @@ Mac                      44 mins             ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
     <!-- 3D_DARK_THEME -->
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-view.svg"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-green.svg"
     />
     <!-- 3D_LIGHT_THEME -->
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-gitblock.svg"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
     />
     <!-- 3D_FALLBACK_THEME -->
     <img
       width="100%"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-gitblock.svg"
+      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
       alt="3D contribution graph"
     />
   </picture>

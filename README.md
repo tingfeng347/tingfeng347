@@ -82,11 +82,11 @@ Linux                    30 hrs 59 mins      ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿�
 Windows                  9 hrs 20 mins       ⣿⣿⣿⣿⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀   23.17 %
 ```
 
+<!-- AI coding metrics intentionally hidden. -->
+<!--
 🤖 **AI Coding This Week**
 
 ```text
-⏱ AI Coding Time: 36 hrs 19 mins (90.04%)
-
 ✍️ 27,297 lines written by AI, 163 lines written by hand (99.41% AI-written)
 
 🔤 439,758,915 Input Tokens, 1,703,903 Output Tokens
@@ -107,7 +107,7 @@ Claude-Code              0 lines             ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 🔁 Iterative Prompter — average 7 prompts per session
 🚀 High AI Trust — 3.89% of changed lines were hand-edited
 ```
-
+-->
 
  Last Updated on 28/07/2026 15:34:43 UTC
 <!--END_SECTION:waka-->

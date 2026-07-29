@@ -87,6 +87,18 @@ Mac                      44 mins             ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 
 <br/>
 
+<h2 align="center">Developer Galaxy</h2>
+
+<p align="center">
+  <a href="https://tingfeng347.github.io/tingfeng347/">
+    <img src="https://img.shields.io/badge/Launch-Interactive%20Three.js%20Galaxy-7c3aed?style=for-the-badge&logo=threedotjs&logoColor=white" alt="Launch interactive Three.js developer galaxy" />
+  </a>
+</p>
+
+<p align="center"><sub>Drag to explore a live orbital map of my public repositories.</sub></p>
+
+<br/>
+
 <h2 align="center">Contribution Snake</h2>
 
 <div align="center">

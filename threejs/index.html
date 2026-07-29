@@ -3,158 +3,237 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#050816" />
-    <title>tingfeng347 — Developer Galaxy</title>
+    <meta name="theme-color" content="#090b10" />
+    <title>tingfeng347</title>
     <style>
-      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      :root { color-scheme: dark; --bg: #090b10; --ink: #f4f2ed; --muted: #68696f; --line: #ffffff20; --panel: #0d1016cc; --accent: #c6ff6a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
       * { box-sizing: border-box; }
-      body { margin: 0; overflow: hidden; background: #050816; color: #eef4ff; }
-      canvas { display: block; }
-      .hud { pointer-events: none; position: fixed; inset: 0; padding: clamp(20px, 4vw, 56px); display: flex; flex-direction: column; justify-content: space-between; }
-      .topbar, .footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
-      .eyebrow { margin: 0 0 8px; color: #7dd3fc; font: 600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .18em; }
-      h1 { margin: 0; font-size: clamp(28px, 5vw, 66px); line-height: .95; letter-spacing: -.06em; }
-      .sub { margin: 15px 0 0; max-width: 450px; color: #a6b5d3; font-size: clamp(13px, 1.8vw, 16px); line-height: 1.6; }
-      .card { max-width: 260px; padding: 14px 16px; border: 1px solid #ffffff1f; border-radius: 12px; background: #071023a8; backdrop-filter: blur(14px); }
-      .card strong { display: block; color: #c4b5fd; font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
-      .card span { display: block; margin-top: 7px; color: #a6b5d3; font-size: 12px; line-height: 1.45; }
-      .footer { align-items: flex-end; }
-      .hint { color: #7e8cab; font: 500 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
-      a { pointer-events: auto; color: #dce9ff; text-decoration: none; border-bottom: 1px solid #60a5fa; font: 600 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
-      #status { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); color: #8a9ac0; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; transition: opacity .6s; }
-      @media (max-width: 640px) { .topbar { align-items: flex-start; flex-direction: column; } .card { max-width: 100%; } .footer { flex-direction: column; align-items: flex-start; } }
+      body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); }
+      canvas { display: block; cursor: grab; outline: none; }
+      canvas:active { cursor: grabbing; }
+      .ui { position: fixed; inset: 0; pointer-events: none; padding: 26px clamp(22px, 3.4vw, 54px); display: flex; flex-direction: column; justify-content: space-between; }
+      header, footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .mark, .meta, .hint { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+      .mark { color: var(--ink); text-decoration: none; pointer-events: auto; }
+      .meta, .hint { color: var(--muted); }
+      .hint { letter-spacing: .09em; }
+      .detail { pointer-events: auto; position: fixed; right: clamp(22px, 3.4vw, 54px); bottom: 64px; width: min(260px, calc(100vw - 44px)); padding: 17px 18px 15px; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(16px); opacity: 0; transform: translateY(10px); transition: opacity .22s ease, transform .22s ease; }
+      .detail.visible { opacity: 1; transform: translateY(0); }
+      .detail button { position: absolute; top: 8px; right: 9px; padding: 5px; border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+      .detail h1 { max-width: 210px; margin: 0 0 13px; color: var(--ink); font-size: 14px; line-height: 1.35; letter-spacing: .02em; overflow-wrap: anywhere; }
+      .details { display: flex; gap: 15px; color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+      .detail a { display: inline-block; margin-top: 18px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-decoration: none; }
+      @media (prefers-color-scheme: light) {
+        :root { color-scheme: light; --bg: #f5f4ef; --ink: #1a1c21; --muted: #777971; --line: #1a1c211c; --panel: #fffffff0; --accent: #477c00; }
+      }
+      @media (max-width: 640px) { .meta { display: none; } .detail { bottom: 54px; } .hint { font-size: 9px; } }
     </style>
   </head>
   <body>
-    <main class="hud">
-      <div class="topbar">
-        <section>
-          <p class="eyebrow">TINGFENG347 / DEVELOPER GALAXY</p>
-          <h1>Build in orbit.</h1>
-          <p class="sub">A living map of public repositories. Each planet is a project; its scale follows the constellation of stars around it.</p>
-        </section>
-        <aside class="card"><strong>LIVE TELEMETRY</strong><span id="repo-count">Scanning public repositories…</span></aside>
-      </div>
-      <div class="footer">
-        <span class="hint">DRAG TO ROTATE · SCROLL TO ZOOM · CLICK A PLANET TO OPEN</span>
-        <a href="https://github.com/tingfeng347">GITHUB PROFILE ↗</a>
-      </div>
-    </main>
-    <div id="status">INITIALIZING ORBITAL MAP</div>
+    <div class="ui">
+      <header><a class="mark" href="https://github.com/tingfeng347">TINGFENG347</a><span id="count" class="meta">···</span></header>
+      <footer><span class="hint">drag · zoom · select</span><span class="meta">project orbit</span></footer>
+    </div>
+    <aside id="detail" class="detail" aria-live="polite">
+      <button id="close" type="button" aria-label="Close project details">×</button>
+      <h1 id="project-name"></h1>
+      <div class="details"><span id="project-language"></span><span id="project-stars"></span></div>
+      <a id="project-link" target="_blank" rel="noopener">OPEN ↗</a>
+    </aside>
 
-    <script type="importmap">
-      { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js" } }
-    </script>
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js" } }</script>
     <script type="module">
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js';
       import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/controls/OrbitControls.js';
 
       const fallback = [
-        { name: 'AI LAB', stargazers_count: 8, html_url: 'https://github.com/tingfeng347', language: 'Python' },
-        { name: 'WEB STUDIO', stargazers_count: 5, html_url: 'https://github.com/tingfeng347', language: 'TypeScript' },
-        { name: 'OPEN SOURCE', stargazers_count: 3, html_url: 'https://github.com/tingfeng347', language: 'JavaScript' },
-        { name: 'EXPERIMENTS', stargazers_count: 1, html_url: 'https://github.com/tingfeng347', language: 'Code' },
+        { name: 'projects', stargazers_count: 10, html_url: 'https://github.com/tingfeng347', language: 'code' },
+        { name: 'experiments', stargazers_count: 6, html_url: 'https://github.com/tingfeng347', language: 'code' },
+        { name: 'archive', stargazers_count: 3, html_url: 'https://github.com/tingfeng347', language: 'code' },
+        { name: 'notes', stargazers_count: 1, html_url: 'https://github.com/tingfeng347', language: 'code' },
       ];
-      const colors = { Python: 0x60a5fa, TypeScript: 0x38bdf8, JavaScript: 0xfacc15, Java: 0xfb7185, Vue: 0x34d399, default: 0xa78bfa };
+      const palette = [0xc6ff6a, 0x7eb8ff, 0xffa26a, 0xd89cff, 0x65e0cf, 0xf4f2ed];
+      const themes = {
+        dark: { background: 0x090b10, fog: 0x090b10, stars: 0xa5a6aa, orbit: 0x4e5666, label: '#f4f2ed', core: 0xf4f2ed, accent: 0xc6ff6a, ground: 0x10131b },
+        light: { background: 0xf5f4ef, fog: 0xf5f4ef, stars: 0x7e817d, orbit: 0x9ba096, label: '#1a1c21', core: 0x1a1c21, accent: 0x477c00, ground: 0xd3d4cf },
+      };
+      const themeQuery = matchMedia('(prefers-color-scheme: dark)');
+      let theme = themes[themeQuery.matches ? 'dark' : 'light'];
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x050816, 0.022);
-      const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 200);
-      camera.position.set(0, 7, 18);
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      scene.fog = new THREE.FogExp2(theme.fog, .028);
+      const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, .1, 180);
+      camera.position.set(0, 5.4, 17);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setSize(innerWidth, innerHeight);
-      renderer.setAnimationLoop(animate);
+      renderer.domElement.tabIndex = 0;
+      renderer.domElement.setAttribute('aria-label', 'Interactive project orbit. Use arrow keys to select a project and Enter to open it.');
       document.body.prepend(renderer.domElement);
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
+      controls.dampingFactor = .055;
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.35;
-      controls.minDistance = 8;
-      controls.maxDistance = 35;
-      controls.maxPolarAngle = Math.PI * 0.77;
-      controls.target.set(0, 0, 0);
-
-      scene.add(new THREE.AmbientLight(0x87a9ff, 1.2));
-      const coreLight = new THREE.PointLight(0x60a5fa, 4, 60);
-      scene.add(coreLight);
-      const core = new THREE.Mesh(new THREE.SphereGeometry(1.05, 48, 48), new THREE.MeshBasicMaterial({ color: 0xdbeafe }));
-      scene.add(core);
-      const coreGlow = new THREE.Mesh(new THREE.SphereGeometry(1.38, 48, 48), new THREE.MeshBasicMaterial({ color: 0x2563eb, transparent: true, opacity: 0.13 }));
-      scene.add(coreGlow);
-
-      const stars = new THREE.BufferGeometry();
-      const points = Array.from({ length: 1600 }, () => (Math.random() - .5) * 120);
-      stars.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-      scene.add(new THREE.Points(stars, new THREE.PointsMaterial({ color: 0xa5c7ff, size: 0.055, transparent: true, opacity: 0.75 })));
-
-      const planets = [];
-      const raycaster = new THREE.Raycaster();
+      controls.autoRotateSpeed = .28;
+      controls.minDistance = 7;
+      controls.maxDistance = 28;
+      controls.maxPolarAngle = Math.PI * .72;
       const pointer = new THREE.Vector2();
-      function textSprite(text) {
-        const label = document.createElement('canvas');
-        const labelContext = label.getContext('2d');
-        label.width = 512; label.height = 80;
-        labelContext.clearRect(0, 0, label.width, label.height);
-        labelContext.fillStyle = '#dbeafe'; labelContext.font = '600 28px monospace'; labelContext.textAlign = 'center';
-        labelContext.fillText(text.slice(0, 22).toUpperCase(), 256, 47);
-        const texture = new THREE.CanvasTexture(label);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-        sprite.scale.set(3.8, .6, 1); return sprite;
+      const raycaster = new THREE.Raycaster();
+      const planets = [];
+      let hovered = null;
+      let selectedIndex = -1;
+
+      const skyLight = new THREE.HemisphereLight(0xe6e3d9, theme.ground, 1.65);
+      scene.add(skyLight);
+      const light = new THREE.PointLight(theme.accent, 3.8, 42);
+      scene.add(light);
+      const nucleus = new THREE.Mesh(new THREE.SphereGeometry(.72, 40, 40), new THREE.MeshStandardMaterial({ color: theme.core, emissive: theme.accent, emissiveIntensity: .28, roughness: .35 }));
+      scene.add(nucleus);
+      const halo = new THREE.Mesh(new THREE.RingGeometry(.98, 1.05, 64), new THREE.MeshBasicMaterial({ color: theme.accent, transparent: true, opacity: .48, side: THREE.DoubleSide }));
+      halo.rotation.x = Math.PI / 2;
+      scene.add(halo);
+
+      const starGeometry = new THREE.BufferGeometry();
+      const stars = Array.from({ length: 1050 }, () => (Math.random() - .5) * 100);
+      starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
+      const starMaterial = new THREE.PointsMaterial({ color: theme.stars, size: .038, transparent: true, opacity: .6 });
+      scene.add(new THREE.Points(starGeometry, starMaterial));
+      const orbitMaterials = [];
+
+      function drawLabel(sprite) {
+        const { canvas, context, text, texture } = sprite.userData;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = theme.label;
+        context.font = '700 24px monospace';
+        context.textAlign = 'center';
+        context.fillText(text.toUpperCase().slice(0, 28), canvas.width / 2, 39);
+        texture.needsUpdate = true;
       }
-      function orbit(radius, tilt) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, .012, 6, 128), new THREE.MeshBasicMaterial({ color: 0x4465a3, transparent: true, opacity: .38 }));
-        ring.rotation.x = Math.PI / 2 + tilt; scene.add(ring);
+      function makeLabel(text) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; canvas.height = 64;
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.LinearFilter;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+        sprite.userData = { canvas, context: canvas.getContext('2d'), text, texture };
+        sprite.scale.set(3.4, .34, 1);
+        drawLabel(sprite);
+        return sprite;
       }
-      function addPlanets(repositories) {
-        repositories.slice(0, 8).forEach((repo, index) => {
-          const radius = 3.4 + index * 1.52;
-          const angle = index * 1.8;
-          const size = Math.min(1.05, .36 + Math.log2((repo.stargazers_count || 0) + 2) * .17);
-          const color = colors[repo.language] || colors.default;
-          orbit(radius, (index % 3 - 1) * .12);
-          const group = new THREE.Group();
-          group.userData = { radius, angle, speed: .0022 + index * .00018, repo };
-          const planet = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), new THREE.MeshStandardMaterial({ color, roughness: .42, metalness: .35, emissive: color, emissiveIntensity: .16 }));
-          planet.userData.repo = repo; group.add(planet);
-          const aura = new THREE.Mesh(new THREE.SphereGeometry(size * 1.32, 32, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .09 }));
-          group.add(aura);
-          const tag = textSprite(repo.name); tag.position.y = size + .65; group.add(tag);
-          scene.add(group); planets.push(group);
+      function applyTheme() {
+        theme = themes[themeQuery.matches ? 'dark' : 'light'];
+        scene.background = new THREE.Color(theme.background);
+        scene.fog.color.setHex(theme.fog);
+        renderer.setClearColor(theme.background);
+        skyLight.groundColor.setHex(theme.ground);
+        light.color.setHex(theme.accent);
+        nucleus.material.color.setHex(theme.core);
+        nucleus.material.emissive.setHex(theme.accent);
+        halo.material.color.setHex(theme.accent);
+        starMaterial.color.setHex(theme.stars);
+        orbitMaterials.forEach(material => material.color.setHex(theme.orbit));
+        planets.forEach(group => {
+          group.userData.ring.material.color.setHex(theme.accent);
+          drawLabel(group.userData.label);
         });
+        document.querySelector('meta[name="theme-color"]').content = themeQuery.matches ? '#090b10' : '#f5f4ef';
       }
-      async function loadRepositories() {
+
+      function addOrbit(radius, tilt) {
+        const material = new THREE.MeshBasicMaterial({ color: theme.orbit, transparent: true, opacity: .42 });
+        orbitMaterials.push(material);
+        const orbit = new THREE.Mesh(new THREE.TorusGeometry(radius, .009, 5, 140), material);
+        orbit.rotation.x = Math.PI / 2 + tilt;
+        scene.add(orbit);
+      }
+      function makePlanet(repository, index) {
+        const radius = 2.7 + index * 1.3;
+        const size = Math.min(.9, .28 + Math.log2((repository.stargazers_count || 0) + 2) * .14);
+        const color = palette[index % palette.length];
+        const group = new THREE.Group();
+        group.userData = { repository, radius, angle: index * 1.87, speed: .0014 + index * .00017, index };
+        const planet = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 3), new THREE.MeshStandardMaterial({ color, roughness: .6, metalness: .12, emissive: color, emissiveIntensity: .045 }));
+        planet.userData.group = group;
+        const selectedRing = new THREE.Mesh(new THREE.TorusGeometry(size * 1.33, .018, 6, 48), new THREE.MeshBasicMaterial({ color: theme.accent, transparent: true, opacity: 0 }));
+        selectedRing.rotation.x = Math.PI / 2;
+        const label = makeLabel(repository.name);
+        label.position.y = size + .42;
+        group.add(planet, selectedRing, label);
+        group.userData.planet = planet;
+        group.userData.ring = selectedRing;
+        group.userData.label = label;
+        addOrbit(radius, (index % 3 - 1) * .09);
+        scene.add(group); planets.push(group);
+      }
+      function positionPlanet(group) {
+        const { radius, angle, index } = group.userData;
+        group.position.set(Math.cos(angle) * radius, Math.sin(angle * 1.45 + index) * .34, Math.sin(angle) * radius);
+      }
+      function showDetail(group) {
+        const repo = group.userData.repository;
+        selectedIndex = group.userData.index;
+        document.querySelector('#project-name').textContent = repo.name;
+        document.querySelector('#project-language').textContent = repo.language || 'code';
+        document.querySelector('#project-stars').textContent = `★ ${repo.stargazers_count || 0}`;
+        document.querySelector('#project-link').href = repo.html_url;
+        document.querySelector('#detail').classList.add('visible');
+      }
+      function closeDetail() { selectedIndex = -1; document.querySelector('#detail').classList.remove('visible'); }
+      function setHovered(group) {
+        hovered = group;
+        renderer.domElement.style.cursor = group ? 'pointer' : 'grab';
+      }
+      function hitTest(event) {
+        pointer.x = event.clientX / innerWidth * 2 - 1;
+        pointer.y = -(event.clientY / innerHeight) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects(planets.map(group => group.userData.planet));
+        return hit[0]?.object.userData.group || null;
+      }
+      async function load() {
+        let repositories = fallback;
         try {
           const response = await fetch('https://api.github.com/users/tingfeng347/repos?per_page=100&sort=updated');
-          if (!response.ok) throw new Error('GitHub API unavailable');
-          const repos = (await response.json()).filter(repo => !repo.fork).sort((a, b) => b.stargazers_count - a.stargazers_count || new Date(b.updated_at) - new Date(a.updated_at));
-          if (!repos.length) throw new Error('No public repositories');
-          addPlanets(repos);
-          document.querySelector('#repo-count').textContent = `${repos.length} public repositories mapped`;
-        } catch {
-          addPlanets(fallback);
-          document.querySelector('#repo-count').textContent = 'Offline map · GitHub profile linked';
-        } finally { document.querySelector('#status').style.opacity = 0; }
+          if (!response.ok) throw new Error();
+          const data = await response.json();
+          const publicRepos = data.filter(repo => !repo.fork).sort((a, b) => b.stargazers_count - a.stargazers_count || new Date(b.updated_at) - new Date(a.updated_at));
+          if (publicRepos.length) repositories = publicRepos;
+          document.querySelector('#count').textContent = `${publicRepos.length} projects`;
+        } catch { document.querySelector('#count').textContent = 'project orbit'; }
+        repositories.slice(0, 9).forEach(makePlanet);
       }
-      function placePlanet(group) {
-        const { radius, angle } = group.userData;
-        group.position.set(Math.cos(angle) * radius, Math.sin(angle * 1.7) * .55, Math.sin(angle) * radius);
-      }
-      function animate() {
-        const time = performance.now();
-        core.scale.setScalar(1 + Math.sin(time * .002) * .035);
-        coreGlow.scale.setScalar(1 + Math.sin(time * .0014) * .07);
-        planets.forEach(group => { group.userData.angle += group.userData.speed; placePlanet(group); group.rotation.y += .008; });
+      renderer.domElement.addEventListener('pointermove', event => setHovered(hitTest(event)));
+      renderer.domElement.addEventListener('pointerleave', () => setHovered(null));
+      renderer.domElement.addEventListener('click', event => { const target = hitTest(event); if (target) showDetail(target); });
+      renderer.domElement.addEventListener('keydown', event => {
+        if (!planets.length) return;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault(); const step = event.key === 'ArrowLeft' ? -1 : 1;
+          selectedIndex = (selectedIndex + step + planets.length) % planets.length; showDetail(planets[selectedIndex]);
+        }
+        if (event.key === 'Enter' && selectedIndex >= 0) window.open(planets[selectedIndex].userData.repository.html_url, '_blank', 'noopener');
+        if (event.key === 'Escape') closeDetail();
+      });
+      document.querySelector('#close').addEventListener('click', closeDetail);
+      addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+      function animate(time) {
+        nucleus.scale.setScalar(1 + Math.sin(time * .0018) * .025);
+        halo.rotation.z += .003;
+        planets.forEach(group => {
+          group.userData.angle += group.userData.speed;
+          positionPlanet(group);
+          group.rotation.y += .006;
+          const active = group === hovered || group.userData.index === selectedIndex;
+          group.scale.lerp(new THREE.Vector3(active ? 1.15 : 1, active ? 1.15 : 1, active ? 1.15 : 1), .1);
+          group.userData.ring.material.opacity += ((group.userData.index === selectedIndex ? .9 : 0) - group.userData.ring.material.opacity) * .12;
+        });
         controls.update(); renderer.render(scene, camera);
       }
-      addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
-      addEventListener('pointermove', event => { pointer.x = event.clientX / innerWidth * 2 - 1; pointer.y = -(event.clientY / innerHeight) * 2 + 1; });
-      addEventListener('click', () => {
-        raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObjects(scene.children, true).find(item => item.object.userData.repo);
-        if (hit) open(hit.object.userData.repo.html_url, '_blank', 'noopener');
-      });
-      loadRepositories();
+      renderer.setAnimationLoop(animate);
+      themeQuery.addEventListener('change', applyTheme);
+      applyTheme();
+      load();
     </script>
   </body>
 </html>

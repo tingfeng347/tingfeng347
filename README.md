@@ -86,10 +86,20 @@ Mac                      2 hrs 7 mins        ⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 
 <br/>
 
+<h2 align="center">Academic Profile</h2>
+
+<p align="center">
+  <a href="https://tingfeng347.github.io/tingfeng347/academic/">
+    <img src="https://img.shields.io/badge/Visit-Academic%20Profile-617557?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Visit academic profile" />
+  </a>
+</p>
+
+<br/>
+
 <h2 align="center">Developer Galaxy</h2>
 
 <p align="center">
-  <a href="https://tingfeng347.github.io/tingfeng347/">
+  <a href="https://tingfeng347.github.io/tingfeng347/threejs/">
     <img src="https://img.shields.io/badge/Launch-Interactive%20Three.js%20Galaxy-7c3aed?style=for-the-badge&logo=threedotjs&logoColor=white" alt="Launch interactive Three.js developer galaxy" />
   </a>
 </p>

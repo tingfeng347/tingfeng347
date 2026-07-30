@@ -1,10 +1,11 @@
-name: Deploy Developer Galaxy
+name: Deploy Personal Sites
 
 on:
   push:
     branches: [main]
     paths:
       - 'threejs/**'
+      - 'academic/**'
       - '.github/workflows/deploy-galaxy.yml'
   workflow_dispatch:
 
@@ -28,6 +29,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: threejs
+          path: .
       - id: deployment
         uses: actions/deploy-pages@v4

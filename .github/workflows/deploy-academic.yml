@@ -1,13 +1,13 @@
-name: Deploy Developer Galaxy
+name: Deploy Academic Profile
 
 on:
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: '0 0 1 * *'
   push:
     branches: [main]
     paths:
-      - 'threejs/**'
-      - '.github/workflows/deploy-galaxy.yml'
+      - 'academic/**'
+      - '.github/workflows/deploy-academic.yml'
   workflow_dispatch:
 
 permissions:

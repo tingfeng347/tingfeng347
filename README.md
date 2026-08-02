@@ -143,12 +143,12 @@ Windows                  2 hrs 52 mins       ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
     <!-- 3D_LIGHT_THEME -->
     <source
       media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-gitblock.svg"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
     />
     <!-- 3D_FALLBACK_THEME -->
     <img
       width="100%"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-gitblock.svg"
+      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
       alt="3D contribution graph"
     />
   </picture>

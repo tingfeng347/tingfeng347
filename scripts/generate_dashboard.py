@@ -105,6 +105,8 @@ def graphql(token, query, variables):
 
 META = """query($login:String!){user(login:$login){
   login name createdAt followers{totalCount} repositories(privacy:PUBLIC){totalCount}
+  starRepos: repositories(privacy:PUBLIC, ownerAffiliations:OWNER, isFork:false, first:100){
+    nodes{stargazerCount}}
   contributionsCollection{totalCommitContributions totalIssueContributions
     totalPullRequestContributions totalPullRequestReviewContributions
     contributionCalendar{weeks{contributionDays{date contributionCount}}}}}}"""
@@ -158,6 +160,7 @@ def fetch(token):
         login=user["login"], since=user["createdAt"][:4],
         followers=user["followers"]["totalCount"],
         repos=user["repositories"]["totalCount"],
+        stars=sum(n["stargazerCount"] for n in user["starRepos"]["nodes"]),
         commits=cc["totalCommitContributions"],
         issues=cc["totalIssueContributions"],
         prs=cc["totalPullRequestContributions"],
@@ -333,7 +336,7 @@ def render(theme, d, sha, today, badges):
         (f'{d["commits"]:,}', "commits", c["fg"]),
         (f'{d["repos"]}', "public repos", c["fg"]),
         (f'{d["prs"]}', "pull requests", c["fg"]),
-        (f'{d["streak"]}d', "current streak", c["fg"]),
+        (f'{d["stars"]:,}', "stars", c["warn"]),
     ]
     num, lab = [], []
     for i, (value, label, col) in enumerate(stats):

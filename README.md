@@ -11,22 +11,12 @@
     <img
       width="100%"
       src="./assets/terminal-dark.svg"
-      alt="tingfeng347 — animated terminal dashboard: languages, contribution totals and a yearly heatmap"
+      alt="tingfeng347 — animated terminal: intro, a typing session, then languages, contributions and a yearly heatmap"
     />
   </picture>
 </p>
 
 <br/>
-
-<h1 align="center">Hi There 👋, I'm tingfeng347</h1>
-
-<p align="center">
-  <img
-    src="./assets/typing-intro.svg"
-    width="760"
-    alt="Animated developer introduction"
-  />
-</p>
 
 <br/>
 

@@ -56,8 +56,9 @@ INTRO = [
     ("Building Coding Agents · Open Source · Knowledge Graphs", 18, "i3"),
 ]
 COMMANDS = [
-    'git add -A && git commit -m "feat: animated profile"',
-    "python -m windcode --render",
+    "vim agent.py",
+    "python3 -m pytest -q",
+    'git commit -am "feat: profile"',
     "neofetch",
 ]
 
@@ -194,17 +195,17 @@ def render(theme, d, sha, today):
     intro, iy = [], 50
     for idx, (text, size, cls) in enumerate(INTRO):
         intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle" '
-                     f'style="animation-delay:{0.2 + idx * 0.22:.2f}s">{esc(text)}</text>')
+                     f'style="animation-delay:{0.1 + idx * 0.15:.2f}s">{esc(text)}</text>')
         iy += 40 if size > 24 else 30
 
     # 2) a short coding session types itself, ending on neofetch
     prompt = f"{LOGIN}@github ~ ❯ "
-    session, t = [], 1.35
+    session, t = [], 0.7
     for i, cmd in enumerate(COMMANDS):
         ly = 166 + i * 28
         session.append(f'<text class="pr" x="{X0}" y="{ly}" style="animation-delay:{t:.2f}s">{esc(prompt)}</text>')
-        session.append(typed(cmd, X0 + len(prompt) * ADV, ly, "kc", t + 0.12, 0.015))
-        t += 0.12 + len(cmd) * 0.015 + 0.3
+        session.append(typed(cmd, X0 + len(prompt) * ADV, ly, "kc", t + 0.1, 0.01))
+        t += 0.1 + len(cmd) * 0.01 + 0.12
     last_y = 166 + (len(COMMANDS) - 1) * 28
     caret_x = X0 + (len(prompt) + len(COMMANDS[-1])) * ADV + 3
     session.append(f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="8" height="18" '
@@ -230,19 +231,22 @@ def render(theme, d, sha, today):
     for i, (name, count) in enumerate(langs):
         seg = max(3.0, count / total * bar_w - 3)
         col = LANG_COLORS[i % len(LANG_COLORS)]
+        delay = out + 0.2 + i * 0.09
         bar.append(
-            f'<rect x="{cursor_x:.1f}" y="{bar_y}" height="{bar_h}" rx="3" fill="{col}">'
-            f'<animate attributeName="width" from="0" to="{seg:.1f}" dur="0.7s" '
-            f'begin="{out + 0.35 + i * 0.12:.2f}s" fill="freeze"/></rect>'
+            f'<rect x="{cursor_x:.1f}" y="{bar_y}" width="{seg:.1f}" height="{bar_h}" rx="3" fill="{col}" '
+            f'style="transform-box:fill-box;transform-origin:left;animation:grow .6s ease-out {delay:.2f}s both"/>'
         )
         cursor_x += seg + 3
     legend, lx = [], bar_x
     for i, (name, count) in enumerate(langs):
         col = LANG_COLORS[i % len(LANG_COLORS)]
         text = f"{name} {count / total * 100:.0f}%"
+        delay = out + 0.3 + i * 0.09
         legend.append(
-            f'<circle cx="{lx + 5:.1f}" cy="{bar_y + 44}" r="4.5" fill="{col}"/>'
-            f'<text class="lg" x="{lx + 15:.1f}" y="{bar_y + 48}">{esc(name)} '
+            f'<circle cx="{lx + 5:.1f}" cy="{bar_y + 44}" r="4.5" fill="{col}" '
+            f'style="opacity:0;animation:fade .4s ease-out {delay:.2f}s forwards"/>'
+            f'<text class="lg" x="{lx + 15:.1f}" y="{bar_y + 48}" '
+            f'style="animation-delay:{delay:.2f}s">{esc(name)} '
             f'<tspan fill="{c["muted"]}">{count / total * 100:.0f}%</tspan></text>'
         )
         lx += 15 + len(text) * 7.6 + 26
@@ -259,7 +263,7 @@ def render(theme, d, sha, today):
     num, lab = [], []
     for i, (value, label, col) in enumerate(stats):
         sx = X0 + i * (W - 2 * X0) / 5
-        delay = out + 0.9 + i * 0.12
+        delay = out + 0.45 + i * 0.09
         num.append(f'<text class="num" x="{sx}" y="446" fill="{col}" '
                    f'style="animation-delay:{delay:.2f}s">{esc(value)}</text>')
         lab.append(f'<text class="nl" x="{sx}" y="470" style="animation-delay:{delay + 0.06:.2f}s">{esc(label)}</text>')
@@ -275,31 +279,31 @@ def render(theme, d, sha, today):
         for row, (_, n) in enumerate(weeks[col]):
             heat.append(f'<rect class="pop" x="{hx + col * step}" y="{hy + row * step}" '
                         f'width="{cell}" height="{cell}" rx="2.5" fill="{c["heat"][level(n, top_count)]}" '
-                        f'style="animation-delay:{out + 1.2 + col * 0.012:.2f}s"/>')
+                        f'style="animation-delay:{out + 0.7 + col * 0.008:.2f}s"/>')
     months, seen = [], set()
     for col, week in enumerate(weeks):
         first = dt.date.fromisoformat(week[0][0])
         if first.month not in seen and first.day <= 14:
             seen.add(first.month)
             months.append(f'<text class="mo" x="{hx + col * step}" y="{hy - 8}" '
-                          f'style="animation-delay:{out + 1:.2f}s">{first.strftime("%b")}</text>')
+                          f'style="animation-delay:{out + 0.55:.2f}s">{first.strftime("%b")}</text>')
 
     legend_x = hx + len(weeks) * step + 28
-    hleg = f'<text class="lg" x="{legend_x}" y="{hy + 26}" style="animation-delay:{out + 1.4:.2f}s">Less</text>'
+    hleg = f'<text class="lg" x="{legend_x}" y="{hy + 26}" style="animation-delay:{out + 0.85:.2f}s">Less</text>'
     hleg += "".join(
         f'<rect class="pop" x="{legend_x + 34 + i * (cell + 3)}" y="{hy + 14}" width="{cell}" '
-        f'height="{cell}" rx="2.5" fill="{col}" style="animation-delay:{out + 1.4 + i * 0.06:.2f}s"/>'
+        f'height="{cell}" rx="2.5" fill="{col}" style="animation-delay:{out + 0.85 + i * 0.06:.2f}s"/>'
         for i, col in enumerate(c["heat"]))
     hleg += (f'<text class="lg" x="{legend_x + 34 + 5 * (cell + 3) + 2}" y="{hy + 26}" '
-             f'style="animation-delay:{out + 1.4:.2f}s">More</text>')
+             f'style="animation-delay:{out + 0.85:.2f}s">More</text>')
 
-    cap = (f'<text class="cap" x="{X0}" y="{hy + 7 * step + 30}" style="animation-delay:{out + 1.7:.2f}s">'
+    cap = (f'<text class="cap" x="{X0}" y="{hy + 7 * step + 30}" style="animation-delay:{out + 1.0:.2f}s">'
            f'{d["contributions"]:,} contributions in the last year · {len(weeks)} weeks · '
            f'{d["active_days"]} active days</text>')
-    footer = (f'<text class="ft" x="{X0}" y="{H - 24}" style="animation-delay:{out + 1.8:.2f}s">'
+    footer = (f'<text class="ft" x="{X0}" y="{H - 24}" style="animation-delay:{out + 1.05:.2f}s">'
               f'{LOGIN}.github.io</text>'
               f'<text class="ft" x="{W - X0}" y="{H - 24}" text-anchor="end" '
-              f'style="animation-delay:{out + 1.8:.2f}s">rendered {today:%Y-%m-%d} · {sha}</text>')
+              f'style="animation-delay:{out + 1.05:.2f}s">rendered {today:%Y-%m-%d} · {sha}</text>')
 
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-labelledby="t">
 <title id="t">{LOGIN} — terminal dashboard</title>
@@ -324,6 +328,7 @@ text{{font-family:{MONO}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @keyframes pop{{from{{transform:scale(0)}}to{{transform:scale(1)}}}}
+@keyframes grow{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.pr,.kc,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.pop{{opacity:1}}}}
 </style>
 {"".join(intro)}

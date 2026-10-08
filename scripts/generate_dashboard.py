@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Render tingfeng347's profile as an animated, frameless terminal.
 
-A centred intro banner sits above a short, self-typing coding session (ending on
-`neofetch`). The neofetch output is deliberately sparse and punchy: a language
-bar, five headline numbers, and a yearly contribution heatmap — all driven by
-real GitHub data.
+Layout, animated on load: a centred intro banner, the tech-stack badges, a short
+self-typing coding session (ending on `neofetch`), then the neofetch output — a
+language bar, five headline numbers and a yearly contribution heatmap — all
+driven by real GitHub data.
 
-One self-contained SVG per colour scheme (no scripts, no external resources), so
-it animates inside a README <img>.
+One self-contained SVG per colour scheme. The shields.io badges are fetched once
+and inlined as data URIs (with a flat-chip fallback), so nothing external is
+required at render time and it animates inside a README <img>.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -15,19 +16,22 @@ Only the standard library is used, so the workflow needs no install step.
 
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 LOGIN = sys.argv[1] if len(sys.argv) > 1 else "tingfeng347"
 OUT = Path(__file__).resolve().parent.parent / "assets"
 
-W, H = 1160, 730
+W, H = 1160, 800
 X0 = 40
 ADV = 9.6  # monospace cell at 16px
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
@@ -47,7 +51,6 @@ THEMES = {
     ),
 }
 
-# vibrant, hue-separated language colours (the legend carries the names)
 LANG_COLORS = ["#3b82f6", "#f97316", "#22c55e", "#eab308", "#a855f7", "#ec4899"]
 
 INTRO = [
@@ -55,6 +58,21 @@ INTRO = [
     ("🎯 Focused · Full-Stack & AI Agent Developer", 19, "i2"),
     ("Building Coding Agents · Open Source · Knowledge Graphs", 18, "i3"),
 ]
+
+# tech-stack badges, laid out like the README rows: (url_label, hex, logo, logoColor)
+BADGE_ROWS = [
+    [("Python", "3776AB", "python", "white"), ("Java", "F89820", "openjdk", "white"),
+     ("TypeScript", "3178C6", "typescript", "white"), ("Node.js", "339933", "nodedotjs", "white"),
+     ("Shell", "4EAA25", "gnubash", "white")],
+    [("FastAPI", "009688", "fastapi", "white"), ("Vue.js", "4FC08D", "vuedotjs", "white"),
+     ("React", "61DAFB", "react", "black"), ("LangGraph", "2C3E50", "langchain", "white"),
+     ("LlamaIndex", "6A0DAD", "openai", "white"), ("PyTorch", "EE4C2C", "pytorch", "white")],
+    [("vLLM", "000000", "nvidia", "white"), ("Git", "F05032", "git", "white"),
+     ("Neo4j", "4581C3", "neo4j", "white"), ("MySQL", "4479A1", "mysql", "white"),
+     ("Docker", "2496ED", "docker", "white"), ("Linux", "FCC624", "linux", "black"),
+     ("VS_Code", "007ACC", "visualstudiocode", "white"), ("Agent", "6C5CE7", "robotframework", "white")],
+]
+
 COMMANDS = [
     "vim agent.py",
     "python3 -m pytest -q",
@@ -135,6 +153,7 @@ def fetch(token):
             streak += 1
             cursor_day -= dt.timedelta(days=1)
 
+    own = {k: v for k, v in repos.items() if k.lower().startswith(LOGIN.lower() + "/")}
     return dict(
         login=user["login"], since=user["createdAt"][:4],
         followers=user["followers"]["totalCount"],
@@ -147,10 +166,8 @@ def fetch(token):
         active_days=len(active),
         streak=streak,
         languages=sorted(languages.items(), key=lambda kv: -kv[1])[:5],
-        top_repos=sorted(repos.items(), key=lambda kv: -kv[1]["commits"])[:1],
-        top_starred=sorted(
-            ({k: v for k, v in repos.items() if k.lower().startswith(LOGIN.lower() + "/")} or repos).items(),
-            key=lambda kv: (-kv[1]["stars"], -kv[1]["commits"]))[:1],
+        top_starred=sorted((own or repos).items(),
+                           key=lambda kv: (-kv[1]["stars"], -kv[1]["commits"]))[:1],
     )
 
 
@@ -163,6 +180,42 @@ def head_hash():
         except OSError:
             sha = ""
     return (sha or "-------")[:7]
+
+
+def fetch_badge(label, color, logo, logo_color):
+    """Return (data_uri, width, height) for a shields.io flat-square badge, or None."""
+    url = (f"https://img.shields.io/badge/{label}-{color}"
+           f"?style=flat-square&logo={logo}&logoColor={logo_color}")
+    req = urllib.request.Request(url, headers={"User-Agent": LOGIN})
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                svg = resp.read()
+            w = re.search(rb'width="([0-9.]+)"', svg)
+            h = re.search(rb'height="([0-9.]+)"', svg)
+            if not w:
+                return None
+            return ("data:image/svg+xml;base64," + base64.b64encode(svg).decode(),
+                    float(w.group(1)), float(h.group(1)) if h else 20.0)
+        except OSError:
+            if attempt == 0:
+                time.sleep(1)
+    return None
+
+
+def load_badges():
+    rows = []
+    for row in BADGE_ROWS:
+        built = []
+        for label, color, logo, logo_color in row:
+            got = fetch_badge(label, color, logo, logo_color)
+            if got:
+                built.append(("img", got[0], got[1], got[2], color))
+            else:  # flat-chip fallback: keep the shape if shields is unreachable
+                text = label.replace("_", " ")
+                built.append(("chip", text, 18 + len(text) * 7.4, 20.0, color))
+        rows.append(built)
+    return rows
 
 
 # ── drawing helpers ───────────────────────────────────────────────────
@@ -190,50 +243,68 @@ def level(count, top):
 
 # ── plate ─────────────────────────────────────────────────────────────
 
-def render(theme, d, sha, today):
+def render(theme, d, sha, today, badges):
     c = THEMES[theme]
     mid = W / 2
 
     # 1) centred intro banner
-    intro, iy = [], 50
+    intro, iy = [], 46
     for idx, (text, size, cls) in enumerate(INTRO):
         intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle" '
                      f'style="animation-delay:{0.1 + idx * 0.15:.2f}s">{esc(text)}</text>')
-        iy += 40 if size > 24 else 30
+        iy += 40 if size > 24 else 28
 
-    # 2) a short coding session types itself, ending on neofetch
+    # 2) tech-stack badges, centred rows, staggered in
+    badge_svg = []
+    for r, row in enumerate(badges):
+        total = sum(w for _, _, w, _, _ in row) + 8 * (len(row) - 1)
+        x = (W - total) / 2
+        for i, (kind, payload, bw, bh, color) in enumerate(row):
+            delay = 0.55 + r * 0.35 + i * 0.07
+            if kind == "img":
+                inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
+            else:
+                inner = (f'<rect width="{bw:.0f}" height="{bh:.0f}" rx="3" fill="#{color}"/>'
+                         f'<text x="{bw / 2:.0f}" y="13.5" text-anchor="middle" font-size="11" '
+                         f'font-family="{MONO}" fill="#fff">{esc(payload)}</text>')
+            badge_svg.append(
+                f'<g transform="translate({x:.1f},{146 + r * 26})">'
+                f'<g class="bdg" style="animation-delay:{delay:.2f}s">{inner}</g></g>')
+            x += bw + 8
+
+    # 3) a short coding session types itself, ending on neofetch
     prompt = f"{LOGIN}@github ~ ❯ "
-    session, t = [], 0.7
+    session, t = [], 1.5
     for i, cmd in enumerate(COMMANDS):
-        ly = 166 + i * 28
+        ly = 252 + i * 26
         session.append(f'<text class="pr" x="{X0}" y="{ly}" style="animation-delay:{t:.2f}s">{esc(prompt)}</text>')
         session.append(typed(cmd, X0 + len(prompt) * ADV, ly, "kc", t + 0.1, 0.01))
         t += 0.1 + len(cmd) * 0.01 + 0.12
-    last_y = 166 + (len(COMMANDS) - 1) * 28
+    last_y = 252 + (len(COMMANDS) - 1) * 26
     caret_x = X0 + (len(prompt) + len(COMMANDS[-1])) * ADV + 3
     session.append(f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="8" height="18" '
                    f'fill="{c["fg"]}" style="animation-delay:{t:.2f}s"/>')
     out = t + 0.2  # neofetch output begins
 
-    # 3) neofetch header
-    ranked = d["top_starred"] or d["top_repos"] or [("—", {"stars": 0})]
+    # 4) neofetch header
+    ranked = d["top_starred"] or [("—", {"stars": 0})]
     top = ranked[0]
     head = (
-        f'<text class="host" x="{X0}" y="286" style="animation-delay:{out:.2f}s">{LOGIN}@github</text>'
-        f'<text class="since" x="{X0 + 244}" y="286" style="animation-delay:{out + 0.05:.2f}s">since {d["since"]}</text>'
-        f'<text class="since" x="{W - X0}" y="286" text-anchor="end" '
+        f'<text class="host" x="{X0}" y="392" style="animation-delay:{out:.2f}s">{LOGIN}@github</text>'
+        f'<text class="since" x="{X0 + 244}" y="392" style="animation-delay:{out + 0.05:.2f}s">since {d["since"]}</text>'
+        f'<text class="since" x="{W - X0}" y="392" text-anchor="end" '
         f'style="animation-delay:{out + 0.05:.2f}s">top repo · {esc(top[0].split("/")[-1])} ★{top[1]["stars"]}</text>'
-        f'<line x1="{X0}" y1="300" x2="{W - X0}" y2="300" stroke="{c["key"]}" stroke-opacity=".35" '
+        f'<line x1="{X0}" y1="406" x2="{W - X0}" y2="406" stroke="{c["key"]}" stroke-opacity=".35" '
         f'style="opacity:0;animation:fade .4s ease-out {out:.2f}s forwards"/>'
     )
 
-    # 4) stacked language bar + legend
+    # 5) stacked language bar + packed legend
     langs = d["languages"]
-    total = sum(v for _, v in langs) or 1
-    bar_x, bar_y, bar_w, bar_h = X0, 336, W - 2 * X0, 12
+    total_lang = sum(v for _, v in langs) or 1
+    bar_x, bar_y, bar_w, bar_h = X0, 440, W - 2 * X0, 12
     bar, cursor_x = [], bar_x
     for i, (name, count) in enumerate(langs):
-        seg = max(3.0, count / total * bar_w - 3)
+        seg = max(3.0, count / total_lang * bar_w - 3)
         col = LANG_COLORS[i % len(LANG_COLORS)]
         delay = out + 0.2 + i * 0.09
         bar.append(
@@ -244,19 +315,19 @@ def render(theme, d, sha, today):
     legend, lx = [], bar_x
     for i, (name, count) in enumerate(langs):
         col = LANG_COLORS[i % len(LANG_COLORS)]
-        text = f"{name} {count / total * 100:.0f}%"
+        text = f"{name} {count / total_lang * 100:.0f}%"
         delay = out + 0.3 + i * 0.09
         legend.append(
             f'<circle cx="{lx + 5:.1f}" cy="{bar_y + 44}" r="4.5" fill="{col}" '
             f'style="opacity:0;animation:fade .4s ease-out {delay:.2f}s forwards"/>'
             f'<text class="lg" x="{lx + 15:.1f}" y="{bar_y + 48}" '
             f'style="animation-delay:{delay:.2f}s">{esc(name)} '
-            f'<tspan fill="{c["muted"]}">{count / total * 100:.0f}%</tspan></text>'
+            f'<tspan fill="{c["muted"]}">{count / total_lang * 100:.0f}%</tspan></text>'
         )
         lx += 15 + len(text) * 7.6 + 26
     langs_svg = "".join(bar) + "".join(legend)
 
-    # 5) five headline numbers
+    # 6) five headline numbers
     stats = [
         (f'{d["contributions"]:,}', "contributions / year", c["accent"]),
         (f'{d["commits"]:,}', "commits", c["fg"]),
@@ -268,15 +339,15 @@ def render(theme, d, sha, today):
     for i, (value, label, col) in enumerate(stats):
         sx = X0 + i * (W - 2 * X0) / 5
         delay = out + 0.45 + i * 0.09
-        num.append(f'<text class="num" x="{sx}" y="446" fill="{col}" '
+        num.append(f'<text class="num" x="{sx}" y="540" fill="{col}" '
                    f'style="animation-delay:{delay:.2f}s">{esc(value)}</text>')
-        lab.append(f'<text class="nl" x="{sx}" y="470" style="animation-delay:{delay + 0.06:.2f}s">{esc(label)}</text>')
+        lab.append(f'<text class="nl" x="{sx}" y="564" style="animation-delay:{delay + 0.05:.2f}s">{esc(label)}</text>')
 
-    # 6) yearly heatmap
+    # 7) yearly heatmap
     weeks = d["weeks"]
     cell, gap = 13, 3
     step = cell + gap
-    hx, hy = X0, 516
+    hx, hy = X0, 604
     top_count = max((n for w in weeks for _, n in w), default=1)
     heat = []
     for col in range(len(weeks)):
@@ -316,6 +387,7 @@ text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]};opacity:0;animation:rise .55s ease-out both}}
 .i2{{font-size:19px;fill:{c["fg"]};opacity:0;animation:rise .55s ease-out both}}
 .i3{{font-size:18px;fill:{c["muted"]};opacity:0;animation:rise .55s ease-out both}}
+.bdg{{opacity:0;animation:bdg .45s ease-out both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .01s linear forwards}}
 .kc{{font-size:16px;fill:{c["fg"]};text-anchor:middle;opacity:0;animation:fade .01s linear forwards}}
 .blink{{opacity:0;animation:blink 1.05s steps(1) infinite}}
@@ -330,12 +402,14 @@ text{{font-family:{MONO}}}
 .pop{{transform-box:fill-box;transform-origin:center;animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes bdg{{from{{opacity:0;transform:translateY(8px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @keyframes pop{{from{{transform:scale(0)}}to{{transform:scale(1)}}}}
 @keyframes grow{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
-@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.pr,.kc,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.pop{{opacity:1}}}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.bdg,.pr,.kc,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.pop{{opacity:1}}}}
 </style>
 {"".join(intro)}
+{"".join(badge_svg)}
 {"".join(session)}
 {head}
 {langs_svg}
@@ -355,14 +429,16 @@ def main():
     if not token:
         sys.exit("GITHUB_TOKEN is not set")
     d = fetch(token)
+    badges = load_badges()
+    n_img = sum(1 for row in badges for b in row if b[0] == "img")
     today = dt.date.fromisoformat(d["weeks"][-1][-1][0])
     sha = head_hash()
     OUT.mkdir(exist_ok=True)
     for theme in THEMES:
         (OUT / f"terminal-{theme}.svg").write_text(
-            render(theme, d, sha, today), encoding="utf-8")
-    langs = ", ".join(f"{n}({v})" for n, v in d["languages"])
-    print(f"contributions={d['contributions']} repos={d['repos']} langs={langs}")
+            render(theme, d, sha, today, badges), encoding="utf-8")
+    print(f"contributions={d['contributions']} repos={d['repos']} badges={n_img} img / "
+          f"{sum(len(r) for r in badges)} total")
 
 
 if __name__ == "__main__":

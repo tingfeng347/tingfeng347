@@ -8,6 +8,24 @@
   />
 </p>
 
+<p align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="./assets/terminal-dark.svg"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="./assets/terminal-light.svg"
+    />
+    <img
+      width="100%"
+      src="./assets/terminal-dark.svg"
+      alt="tingfeng347 — animated terminal dashboard: languages, contribution totals and a yearly heatmap"
+    />
+  </picture>
+</p>
+
 <br/>
 
 <p align="center">
@@ -85,72 +103,6 @@ Windows                  37 mins             ⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 <!--END_SECTION:waka-->
 
 <br/>
-
-<h2 align="center">Academic Profile</h2>
-
-<p align="center">
-  <a href="https://tingfeng347.github.io/tingfeng347/academic/">
-    <img src="https://img.shields.io/badge/Visit-Academic%20Profile-617557?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Visit academic profile" />
-  </a>
-</p>
-
-<br/>
-
-<h2 align="center">Developer Galaxy</h2>
-
-<p align="center">
-  <a href="https://tingfeng347.github.io/tingfeng347/threejs/">
-    <img src="https://img.shields.io/badge/Launch-Interactive%20Three.js%20Galaxy-7c3aed?style=for-the-badge&logo=threedotjs&logoColor=white" alt="Launch interactive Three.js developer galaxy" />
-  </a>
-</p>
-
-<p align="center"><sub>Drag to explore a live orbital map of my public repositories.</sub></p>
-
-<br/>
-
-<h2 align="center">Contribution Snake</h2>
-
-<div align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake-dark.svg"
-    />
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
-    />
-    <img
-      alt="contribution snake"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
-    />
-  </picture>
-</div>
-
-<br/>
-
-<h2 align="center">3D Contributions</h2>
-
-<p align="center">
-  <picture>
-    <!-- 3D_DARK_THEME -->
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-green.svg"
-    />
-    <!-- 3D_LIGHT_THEME -->
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
-    />
-    <!-- 3D_FALLBACK_THEME -->
-    <img
-      width="100%"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
-      alt="3D contribution graph"
-    />
-  </picture>
-</p>
 
 <p align="center">
   <img

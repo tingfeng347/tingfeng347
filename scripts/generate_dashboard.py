@@ -3,10 +3,10 @@
 
 Everything shown is drawn from real GitHub data: the contribution calendar drives
 the heatmap, commit history per repository drives the language ranking and the
-"top repo" line, and the user profile fills the small info block.
+"top repo" line, and the user profile fills the info block.
 
 The output is one self-contained SVG per colour scheme (no scripts, no external
-resources beyond an inlined avatar), so it animates inside a README <img>.
+resources), so it animates inside a README <img>.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -14,10 +14,10 @@ Only the standard library is used, so the workflow needs no install step.
 
 from __future__ import annotations
 
-import base64
 import datetime as dt
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.request
@@ -26,7 +26,7 @@ from pathlib import Path
 LOGIN = sys.argv[1] if len(sys.argv) > 1 else "tingfeng347"
 OUT = Path(__file__).resolve().parent.parent / "assets"
 
-W, H = 1160, 604
+W, H = 1160, 596
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 # GitHub's own surfaces so the plate melts into the page.
@@ -36,14 +36,12 @@ THEMES = {
         accent="#3fb950", accent2="#58a6ff", warn="#d29922", key="#39c5cf",
         dots=["#ff5f56", "#ffbd2e", "#27c93f"],
         heat=["#21262d", "#0e4429", "#006d32", "#26a641", "#39d353"],
-        grid="#21262d",
     ),
     "light": dict(
         bg="#ffffff", panel="#f6f8fa", border="#d0d7de", fg="#1f2328", muted="#656d76",
         accent="#1a7f37", accent2="#0969da", warn="#9a6700", key="#1b7c83",
         dots=["#ff5f56", "#ffbd2e", "#27c93f"],
         heat=["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
-        grid="#d8dee4",
     ),
 }
 
@@ -56,19 +54,15 @@ def graphql(token, query, variables):
         data=json.dumps({"query": query, "variables": variables}).encode(),
         headers={"Authorization": f"bearer {token}", "User-Agent": LOGIN},
     )
-    last = None
     for attempt in range(3):  # the API occasionally drops a handshake; a retry is enough
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.load(resp)
             break
-        except OSError as exc:  # noqa: PERF203
-            last = exc
+        except OSError:
             if attempt == 2:
                 raise
             time.sleep(2 + attempt * 3)
-    else:  # pragma: no cover
-        raise last
     if "errors" in body:
         sys.exit(f"GraphQL error: {body['errors']}")
     return body["data"]
@@ -117,72 +111,55 @@ def fetch(token):
                 languages[lang] = languages.get(lang, 0) + total
         cursor = upto
 
-    days = [(date, n) for week in weeks for date, n in week if n > 0]
-    dates = sorted(dt.date.fromisoformat(d) for d, _ in days)
+    active = sorted(dt.date.fromisoformat(d) for d, n in
+                    ((day, n) for week in weeks for day, n in week) if n > 0)
     streak = 0
-    if dates:
-        cursor_day = dates[-1]
-        present = set(dates)
+    if active:
+        cursor_day, present = active[-1], set(active)
         while cursor_day in present:
             streak += 1
             cursor_day -= dt.timedelta(days=1)
 
     return dict(
-        login=user["login"], name=user.get("name") or user["login"],
-        since=user["createdAt"][:4],
+        login=user["login"], since=user["createdAt"][:4],
         followers=user["followers"]["totalCount"],
         repos=user["repositories"]["totalCount"],
         commits=cc["totalCommitContributions"],
         issues=cc["totalIssueContributions"],
         prs=cc["totalPullRequestContributions"],
-        reviews=cc["totalPullRequestReviewContributions"],
         weeks=weeks,
-        contributions=sum(n for _, n in days),
-        active_days=len(days),
+        contributions=sum(n for week in weeks for _, n in week),
+        active_days=len(active),
         streak=streak,
         languages=sorted(languages.items(), key=lambda kv: -kv[1])[:5],
-        top_repos=sorted(repos.items(), key=lambda kv: -kv[1]["commits"])[:3],
+        top_repos=sorted(repos.items(), key=lambda kv: -kv[1]["commits"])[:1],
     )
-
-
-def avatar_data_uri(login):
-    try:
-        with urllib.request.urlopen(f"https://github.com/{login}.png?size=240", timeout=30) as resp:
-            return "data:image/png;base64," + base64.b64encode(resp.read()).decode()
-    except OSError:
-        return None
 
 
 def head_hash():
     sha = os.environ.get("GITHUB_SHA")
     if not sha:
         try:
-            import subprocess
-            sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                                 capture_output=True, text=True,
-                                 cwd=OUT.parent).stdout.strip()
+            sha = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                                 text=True, cwd=OUT.parent).stdout.strip()
         except OSError:
             sha = ""
-    return sha or "-------"
+    return (sha or "-------")[:7]
 
 
-# ── layout helpers ────────────────────────────────────────────────────
+# ── drawing helpers ───────────────────────────────────────────────────
 
 def esc(text):
-    return (text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def typed(text, x, y, advance, cls, start, step=0.035, fill=None):
+def typed(text, x, y, advance, cls, start, step=0.05):
     """One <text> per glyph on a fixed grid so every character can arrive alone."""
-    paint = f' fill="{fill}"' if fill else ""
-    cells = []
-    for i, ch in enumerate(text):
-        delay = start + i * step
-        cells.append(
-            f'<text class="{cls}"{paint} x="{x + i * advance:.1f}" y="{y}" '
-            f'style="animation-delay:{delay:.2f}s">{esc(ch)}</text>'
-        )
-    return "".join(cells)
+    return "".join(
+        f'<text class="{cls}" x="{x + i * advance:.1f}" y="{y}" '
+        f'style="animation-delay:{start + i * step:.2f}s">{esc(ch)}</text>'
+        for i, ch in enumerate(text)
+    )
 
 
 def level(count, top):
@@ -196,11 +173,11 @@ def level(count, top):
 
 # ── plate ─────────────────────────────────────────────────────────────
 
-def render(theme, d, sha, today, avatar):
+def render(theme, d, sha, today):
     c = THEMES[theme]
     pad = 8
-    win = f'<rect x="{pad}" y="{pad}" width="{W - 2 * pad}" height="{H - 2 * pad}" rx="14" ' \
-          f'fill="{c["panel"]}" stroke="{c["border"]}"/>'
+    win = (f'<rect x="{pad}" y="{pad}" width="{W - 2 * pad}" height="{H - 2 * pad}" rx="14" '
+           f'fill="{c["panel"]}" stroke="{c["border"]}"/>')
 
     dots = "".join(f'<circle cx="{34 + i * 20}" cy="30" r="6" fill="{col}"/>'
                    for i, col in enumerate(c["dots"]))
@@ -209,93 +186,74 @@ def render(theme, d, sha, today, avatar):
                 f'<line x1="{pad}" y1="50" x2="{W - pad}" y2="50" stroke="{c["border"]}"/>')
 
     # prompt: the command types itself, then a caret keeps blinking
-    ch = 9.6
-    cmd = "neofetch"
-    ux, uy = 30, 84
+    ch, cmd, ux, uy = 9.6, "neofetch", 30, 86
     user_label = f"{LOGIN}@github"
+    handoff = ux + len(user_label) * ch
     prompt = (
         f'<text class="puser" x="{ux}" y="{uy}">{user_label}</text>'
-        f'<text class="ppath" x="{ux + len(user_label) * ch + 6:.1f}" y="{uy}">~</text>'
-        f'<text class="pcaret" x="{ux + len(user_label) * ch + 22:.1f}" y="{uy}">❯</text>'
-        + typed(cmd, ux + len(user_label) * ch + 44, uy, ch, "pcmd", 0.5, 0.06)
+        f'<text class="ppath" x="{handoff + 6:.1f}" y="{uy}">~</text>'
+        f'<text class="pcaret" x="{handoff + 22:.1f}" y="{uy}">❯</text>'
+        + typed(cmd, handoff + 44, uy, ch, "pcmd", 0.5, 0.06)
     )
-    caret = (f'<rect class="blink" x="{ux + len(user_label) * ch + 44 + len(cmd) * ch + 2:.1f}" '
-             f'y="{uy - 13}" width="8" height="18" fill="{c["fg"]}" style="animation-delay:1.4s"/>')
+    caret = (f'<rect class="blink" x="{handoff + 44 + len(cmd) * ch + 2:.1f}" y="{uy - 13}" '
+             f'width="8" height="18" fill="{c["fg"]}" style="animation-delay:1.4s"/>')
 
-    # avatar tile (left) — inlined so it survives GitHub's camo sandbox
-    ax, ay, asz = 66, 116, 190
-    if avatar:
-        art = (f'<image x="{ax}" y="{ay}" width="{asz}" height="{asz}" preserveAspectRatio="xMidYMid slice" '
-               f'href="{avatar}" clip-path="url(#avatarClip)"/>')
-    else:
-        art = (f'<rect x="{ax}" y="{ay}" width="{asz}" height="{asz}" fill="{c["bg"]}"/>'
-               f'<text class="mono2" x="{ax + asz / 2:.1f}" y="{ay + asz / 2 + 16:.1f}">'
-               f'{esc(d["login"][:2].upper())}</text>')
-    avatar_tile = (
-        f'<g><rect x="{ax}" y="{ay}" width="{asz}" height="{asz}" rx="16" fill="{c["bg"]}" stroke="{c["border"]}"/>'
-        f'{art}'
-        f'<rect x="{ax}" y="{ay}" width="{asz}" height="{asz}" rx="16" fill="none" '
-        f'stroke="{c["accent"]}" stroke-width="1.6" opacity=".75"/></g>'
-    )
+    # info block: a full-width Languages row, then a two-column stats grid
+    k1, v1, k2, v2 = 66, 300, 620, 850
+    head = (f'<text class="host" x="{k1}" y="134">{LOGIN}@github</text>'
+            f'<text class="since" x="{v1}" y="134">since {d["since"]}</text>'
+            f'<line x1="{k1}" y1="147" x2="{k1 + 500}" y2="147" stroke="{c["border"]}"/>')
 
-    # info block (right)
-    ix, vx = 300, 500
-    rows = [
-        ("Languages", " · ".join(name for name, _ in d["languages"]) or "—", c["accent2"]),
-        ("Repos · Followers", f'{d["repos"]} · {d["followers"]}', c["fg"]),
-        ("Contributions", f'{d["contributions"]:,} / year', c["fg"]),
-        ("Commits", f'{d["commits"]:,}', c["fg"]),
-        ("PRs / Issues", f'{d["prs"]} / {d["issues"]}', c["fg"]),
-        ("Active days", f'{d["active_days"]} · streak {d["streak"]}d', c["fg"]),
+    langs = " · ".join(name for name, _ in d["languages"]) or "—"
+    top = d["top_repos"][0] if d["top_repos"] else ("—", {"stars": 0})
+    lang_row = (f'<text class="key" x="{k1}" y="182" style="animation-delay:1.0s">Languages</text>'
+                f'<text class="val" x="{v1}" y="182" fill="{c["accent2"]}" '
+                f'style="animation-delay:1.06s">{esc(langs)}</text>')
+
+    grid = [
+        (k1, v1, "Repos · Followers", f'{d["repos"]} · {d["followers"]}', c["fg"]),
+        (k2, v2, "PRs / Issues", f'{d["prs"]} / {d["issues"]}', c["fg"]),
+        (k1, v1, "Contributions", f'{d["contributions"]:,} / year', c["fg"]),
+        (k2, v2, "Active days", f'{d["active_days"]} · streak {d["streak"]}d', c["fg"]),
+        (k1, v1, "Commits", f'{d["commits"]:,}', c["fg"]),
+        (k2, v2, "Top repo", f'{top[0].split("/")[-1]}  ★{top[1]["stars"]}', c["warn"]),
     ]
-    if d["top_repos"]:
-        name, meta = d["top_repos"][0]
-        rows.append(("Top repo", f'{name.split("/")[-1]}  ★{meta["stars"]}', c["warn"]))
-
-    info = [f'<text class="host" x="{ix}" y="150">{LOGIN}@github</text>'
-            f'<text class="since" x="{ix + 250}" y="150">since {d["since"]}</text>',
-            f'<line x1="{ix}" y1="163" x2="{ix + 300}" y2="163" stroke="{c["border"]}"/>']
-    y = 194
-    for i, (key, val, col) in enumerate(rows):
-        delay = 1.1 + i * 0.16
-        info.append(f'<text class="key" x="{ix}" y="{y}" style="animation-delay:{delay:.2f}s">{key}</text>')
-        info.append(f'<text class="val" x="{vx}" y="{y}" fill="{col}" '
-                    f'style="animation-delay:{delay + 0.06:.2f}s">{esc(val)}</text>')
-        y += 30
-
-    # contribution heatmap (a full year, newest on the right)
-    weeks = d["weeks"]
-    cell, gap = 12, 3
-    step = cell + gap
-    hx, hy = 66, 430
-    top = max((n for w in weeks for _, n in w), default=1)
     cells = []
+    for i, (kx, vx, key, val, col) in enumerate(grid):
+        y = 218 + (i // 2) * 34
+        delay = 1.2 + i * 0.12
+        cells.append(f'<text class="key" x="{kx}" y="{y}" style="animation-delay:{delay:.2f}s">{key}</text>')
+        cells.append(f'<text class="val" x="{vx}" y="{y}" fill="{col}" '
+                     f'style="animation-delay:{delay + 0.05:.2f}s">{esc(val)}</text>')
+    info = head + lang_row + "".join(cells)
+
+    # contribution heatmap: a full year, newest on the right
+    weeks = d["weeks"]
+    cell, gap = 13, 3
+    step = cell + gap
+    hx, hy = 66, 340
+    top_count = max((n for w in weeks for _, n in w), default=1)
+    heat = []
     for col, week in enumerate(weeks):
         for row, (_, n) in enumerate(week):
-            lvl = level(n, top)
-            delay = 2.0 + col * 0.012
-            cells.append(f'<rect class="pop" x="{hx + col * step}" y="{hy + row * step}" '
-                         f'width="{cell}" height="{cell}" rx="2.5" fill="{c["heat"][lvl]}" '
-                         f'style="animation-delay:{delay:.2f}s"/>')
-    # months across the top of the heatmap
-    months = []
-    seen = set()
+            heat.append(f'<rect class="pop" x="{hx + col * step}" y="{hy + row * step}" '
+                        f'width="{cell}" height="{cell}" rx="2.5" fill="{c["heat"][level(n, top_count)]}" '
+                        f'style="animation-delay:{1.8 + col * 0.012:.2f}s"/>')
+    months, seen = [], set()
     for col, week in enumerate(weeks):
         first = dt.date.fromisoformat(week[0][0])
         if first.month not in seen and first.day <= 14:
             seen.add(first.month)
-            months.append(f'<text class="mo" x="{hx + col * step}" y="{hy - 8}">{first.strftime("%b")}</text>')
+            months.append(f'<text class="mo" x="{hx + col * step}" y="{hy - 10}">{first.strftime("%b")}</text>')
 
-    legend_x = hx + len(weeks) * step + 26
-    legend = (f'<text class="lg" x="{legend_x}" y="{hy + 30}">Less</text>')
-    for i, col in enumerate(c["heat"]):
-        legend += (f'<rect x="{legend_x + 34 + i * (cell + 3)}" y="{hy + 18}" width="{cell}" '
-                   f'height="{cell}" rx="2.5" fill="{col}"/>')
-    legend += f'<text class="lg" x="{legend_x + 34 + 5 * (cell + 3) + 2}" y="{hy + 30}">More</text>'
+    legend_x = hx + len(weeks) * step + 28
+    legend = f'<text class="lg" x="{legend_x}" y="{hy + 28}">Less</text>' + "".join(
+        f'<rect x="{legend_x + 34 + i * (cell + 3)}" y="{hy + 16}" width="{cell}" height="{cell}" '
+        f'rx="2.5" fill="{col}"/>' for i, col in enumerate(c["heat"]))
+    legend += f'<text class="lg" x="{legend_x + 34 + 5 * (cell + 3) + 2}" y="{hy + 28}">More</text>'
 
     cap = (f'<text class="cap" x="{hx}" y="{hy + 7 * step + 26}">'
            f'{d["contributions"]:,} contributions in the last year · {len(weeks)} weeks</text>')
-
     footer = (f'<text class="ft" x="{pad + 24}" y="{H - 22}">{LOGIN}.github.io</text>'
               f'<text class="ft" x="{W - pad - 24}" y="{H - 22}" text-anchor="end">'
               f'rendered {today:%Y-%m-%d} · {sha}</text>')
@@ -310,7 +268,6 @@ text{{font-family:{MONO}}}
 .pcaret{{font-size:16px;fill:{c["fg"]}}}
 .pcmd{{font-size:16px;fill:{c["fg"]};text-anchor:middle;opacity:0;animation:fade .01s linear forwards}}
 .blink{{opacity:0;animation:blink 1.05s steps(1) infinite}}
-.mono2{{font-size:64px;font-weight:700;fill:{c["muted"]};text-anchor:middle}}
 .host{{font-size:19px;font-weight:700;fill:{c["accent"]}}}
 .since{{font-size:13px;fill:{c["muted"]}}}
 .key{{font-size:15px;font-weight:700;fill:{c["key"]};opacity:0;animation:slide .4s ease-out both}}
@@ -326,15 +283,11 @@ text{{font-family:{MONO}}}
 @keyframes pop{{from{{transform:scale(0)}}to{{transform:scale(1)}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.pcmd,.key,.val,.pop,.blink{{opacity:1}}}}
 </style>
-<defs>
-<clipPath id="avatarClip"><rect x="{ax}" y="{ay}" width="{asz}" height="{asz}" rx="16"/></clipPath>
-</defs>
 {win}
 {titlebar}
 {prompt}{caret}
-{avatar_tile}
-{"".join(info)}
-{"".join(cells)}
+{info}
+{"".join(heat)}
 {"".join(months)}
 {legend}
 {cap}
@@ -350,11 +303,10 @@ def main():
     d = fetch(token)
     today = dt.date.fromisoformat(d["weeks"][-1][-1][0])
     sha = head_hash()
-    avatar = avatar_data_uri(LOGIN)
     OUT.mkdir(exist_ok=True)
     for theme in THEMES:
         (OUT / f"terminal-{theme}.svg").write_text(
-            render(theme, d, sha, today, avatar), encoding="utf-8")
+            render(theme, d, sha, today), encoding="utf-8")
     langs = ", ".join(f"{n}({v})" for n, v in d["languages"])
     print(f"contributions={d['contributions']} repos={d['repos']} langs={langs}")
 

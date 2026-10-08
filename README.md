@@ -1,13 +1,3 @@
-<h1 align="center">Hi There 👋, I'm tingfeng347</h1>
-
-<p align="center">
-  <img
-    src="./assets/typing-intro.svg"
-    width="760"
-    alt="Animated developer introduction"
-  />
-</p>
-
 <p align="center">
   <picture>
     <source
@@ -24,6 +14,18 @@
       alt="tingfeng347 — animated terminal dashboard: languages, contribution totals and a yearly heatmap"
     />
   </picture>
+</p>
+
+<br/>
+
+<h1 align="center">Hi There 👋, I'm tingfeng347</h1>
+
+<p align="center">
+  <img
+    src="./assets/typing-intro.svg"
+    width="760"
+    alt="Animated developer introduction"
+  />
 </p>
 
 <br/>
@@ -103,6 +105,50 @@ Windows                  37 mins             ⣿⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 <!--END_SECTION:waka-->
 
 <br/>
+
+<h2 align="center">Contribution Snake</h2>
+
+<div align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake-dark.svg"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
+    />
+    <img
+      alt="contribution snake"
+      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
+    />
+  </picture>
+</div>
+
+<br/>
+
+<h2 align="center">3D Contributions</h2>
+
+<p align="center">
+  <picture>
+    <!-- 3D_DARK_THEME -->
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-green.svg"
+    />
+    <!-- 3D_LIGHT_THEME -->
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
+    />
+    <!-- 3D_FALLBACK_THEME -->
+    <img
+      width="100%"
+      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-south-season.svg"
+      alt="3D contribution graph"
+    />
+  </picture>
+</p>
 
 <p align="center">
   <img

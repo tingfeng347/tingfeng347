@@ -148,6 +148,9 @@ def fetch(token):
         streak=streak,
         languages=sorted(languages.items(), key=lambda kv: -kv[1])[:5],
         top_repos=sorted(repos.items(), key=lambda kv: -kv[1]["commits"])[:1],
+        top_starred=sorted(
+            ({k: v for k, v in repos.items() if k.lower().startswith(LOGIN.lower() + "/")} or repos).items(),
+            key=lambda kv: (-kv[1]["stars"], -kv[1]["commits"]))[:1],
     )
 
 
@@ -213,7 +216,8 @@ def render(theme, d, sha, today):
     out = t + 0.2  # neofetch output begins
 
     # 3) neofetch header
-    top = d["top_repos"][0] if d["top_repos"] else ("—", {"stars": 0})
+    ranked = d["top_starred"] or d["top_repos"] or [("—", {"stars": 0})]
+    top = ranked[0]
     head = (
         f'<text class="host" x="{X0}" y="286" style="animation-delay:{out:.2f}s">{LOGIN}@github</text>'
         f'<text class="since" x="{X0 + 244}" y="286" style="animation-delay:{out + 0.05:.2f}s">since {d["since"]}</text>'

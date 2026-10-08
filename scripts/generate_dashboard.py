@@ -41,12 +41,14 @@ THEMES = {
         fg="#e6edf3", muted="#8b949e",
         accent="#3fb950", accent2="#58a6ff", warn="#d29922", key="#39c5cf",
         prompt_user="#3fb950", prompt_path="#58a6ff",
+        stat_colors=["#3fb950", "#58a6ff", "#a371f7", "#f0883e", "#d29922"],
         heat=["#21262d", "#0e4429", "#006d32", "#26a641", "#39d353"],
     ),
     "light": dict(
         fg="#1f2328", muted="#656d76",
         accent="#1a7f37", accent2="#0969da", warn="#9a6700", key="#1b7c83",
         prompt_user="#1a7f37", prompt_path="#0969da",
+        stat_colors=["#1a7f37", "#0969da", "#8250df", "#bc4c00", "#9a6700"],
         heat=["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"],
     ),
 }
@@ -332,15 +334,16 @@ def render(theme, d, sha, today, badges):
 
     # 6) five headline numbers
     stats = [
-        (f'{d["contributions"]:,}', "contributions / year", c["accent"]),
-        (f'{d["commits"]:,}', "commits", c["fg"]),
-        (f'{d["repos"]}', "public repos", c["fg"]),
-        (f'{d["prs"]}', "pull requests", c["fg"]),
-        (f'{d["stars"]:,}', "stars", c["warn"]),
+        (f'{d["contributions"]:,}', "contributions / year"),
+        (f'{d["commits"]:,}', "commits"),
+        (f'{d["repos"]}', "public repos"),
+        (f'{d["prs"]}', "pull requests"),
+        (f'{d["stars"]:,}', "stars"),
     ]
     num, lab = [], []
-    for i, (value, label, col) in enumerate(stats):
+    for i, (value, label) in enumerate(stats):
         sx = X0 + i * (W - 2 * X0) / 5
+        col = c["stat_colors"][i % len(c["stat_colors"])]
         delay = out + 0.45 + i * 0.09
         num.append(f'<text class="num" x="{sx}" y="540" fill="{col}" '
                    f'style="animation-delay:{delay:.2f}s">{esc(value)}</text>')

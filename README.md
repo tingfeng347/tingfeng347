@@ -18,8 +18,6 @@
 
 <br/>
 
-<br/>
-
 <h2 align="center">Weekly Coding Activity</h2>
 
 <!--START_SECTION:waka-->

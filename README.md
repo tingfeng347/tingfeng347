@@ -99,7 +99,7 @@ Mac                      1 hr 25 mins        ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
     <!-- 3D_DARK_THEME -->
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-green.svg"
+      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-view.svg"
     />
     <!-- 3D_LIGHT_THEME -->
     <source

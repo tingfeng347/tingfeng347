@@ -6,9 +6,9 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion is deliberately cheap so it stays smooth: the typewriter, the language
-bar and the heatmap each reveal through a single animated clip-path wipe instead
-of animating hundreds of elements. Text and chips ride in on a springy rise.
+Motion stays small: each command uses one character-stepped clip and a synced
+caret; the language bar and heatmap each use a single continuous clip reveal.
+All motion uses CSS, so reduced-motion readers see the complete static plate.
 
 One self-contained SVG per colour scheme. shields.io badges are fetched once and
 inlined as data URIs (with a flat-chip fallback), so nothing external is needed
@@ -37,6 +37,9 @@ OUT = Path(__file__).resolve().parent.parent / "assets"
 W, H = 1160, 800
 X0 = 40
 ADV = 9.6  # monospace cell at 16px
+TYPE_INTERVAL = 0.04  # each character survives at least two frames at 60 Hz
+LINE_PAUSE = 0.18
+PROMPT_LEAD = 0.12
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -223,12 +226,48 @@ def esc(text):
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def wipe(cid, x, y, w, h, begin, dur):
-    """A clip-path that sweeps left→right once — one animated node, not hundreds."""
+def wipe(cid, x, y, w, h, begin, dur, steps=None):
+    """Reveal a fixed-size clip with a transform; CSS can disable it accessibly."""
+    easing = f"steps({steps},end)" if steps else "linear"
     return (f'<clipPath id="{cid}" clipPathUnits="userSpaceOnUse">'
-            f'<rect x="{x:.1f}" y="{y:.1f}" width="0" height="{h:.1f}">'
-            f'<animate attributeName="width" from="0" to="{w:.1f}" dur="{dur:.2f}s" '
-            f'begin="{begin:.2f}s" fill="freeze"/></rect></clipPath>')
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" '
+            f'style="transform-origin:{x:.1f}px {y:.1f}px;'
+            f'animation:reveal {dur:.2f}s {easing} {begin:.2f}s both"/></clipPath>')
+
+
+def typing_session(c):
+    """Keep character reveals, moving carets and output on the same timeline."""
+    prompt = f"{LOGIN}@github ~ ❯ "
+    prompt_w = len(prompt) * ADV
+    cmd_x = X0 + prompt_w
+    clips, session, t = [], [], 1.1
+    for i, cmd in enumerate(COMMANDS):
+        ly = 252 + i * 26
+        width = len(cmd) * ADV
+        dur = len(cmd) * TYPE_INTERVAL
+        clips.append(wipe(f"cc{i}", cmd_x, ly - 16, width, 24, t, dur, len(cmd)))
+        session.append(
+            f'<text class="pr" x="{X0}" y="{ly}" xml:space="preserve" '
+            f'textLength="{prompt_w:.1f}" lengthAdjust="spacingAndGlyphs" '
+            f'style="animation-delay:{t - PROMPT_LEAD:.2f}s">{esc(prompt)}</text>')
+        session.append(
+            f'<g clip-path="url(#cc{i})">'
+            f'<text class="kc" x="{cmd_x:.1f}" y="{ly}" '
+            f'textLength="{width:.1f}" lengthAdjust="spacingAndGlyphs">{esc(cmd)}</text></g>')
+        session.append(
+            f'<rect class="typing-caret" x="{cmd_x + 2:.1f}" y="{ly - 13}" '
+            f'width="2" height="17" fill="{c["fg"]}" '
+            f'style="--travel:{width:.1f}px;'
+            f'animation:caret-move {dur:.2f}s steps({len(cmd)},end) {t:.2f}s both,'
+            f'caret-presence {dur + LINE_PAUSE:.2f}s steps(1,end) '
+            f'{t - PROMPT_LEAD:.2f}s forwards"/>')
+        t += dur + LINE_PAUSE
+    last_y = 252 + (len(COMMANDS) - 1) * 26
+    caret_x = cmd_x + len(COMMANDS[-1]) * ADV + 2
+    session.append(
+        f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="2" height="17" '
+        f'fill="{c["fg"]}" style="animation-delay:{t - PROMPT_LEAD:.2f}s"/>')
+    return clips, "".join(session), t + 0.15
 
 
 def level(count, top):
@@ -272,25 +311,9 @@ def render(theme, d, sha, today, badges):
                 f'<g class="bdg" style="animation-delay:{delay:.2f}s">{inner}</g></g>')
             x += bw + 8
 
-    # 3) typewriter: prompt fades in, the command reveals through a clip wipe
-    prompt = f"{LOGIN}@github ~ ❯ "
-    prompt_w = len(prompt) * ADV
-    cmd_x = X0 + prompt_w
-    session, t = [], 1.0
-    for i, cmd in enumerate(COMMANDS):
-        ly = 252 + i * 26
-        dur = max(0.22, len(cmd) * 0.012)
-        defs.append(wipe(f"cc{i}", cmd_x, ly - 14, len(cmd) * ADV, 20, t, dur))
-        session.append(f'<text class="pr" x="{X0}" y="{ly}" '
-                       f'style="animation-delay:{max(0.0, t - 0.05):.2f}s">{esc(prompt)}</text>')
-        session.append(f'<g clip-path="url(#cc{i})">'
-                       f'<text class="kc" x="{cmd_x:.1f}" y="{ly}">{esc(cmd)}</text></g>')
-        t += dur + 0.12
-    last_y = 252 + (len(COMMANDS) - 1) * 26
-    caret_x = cmd_x + len(COMMANDS[-1]) * ADV + 3
-    session.append(f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="8" height="18" '
-                   f'fill="{c["fg"]}" style="animation-delay:{t:.2f}s"/>')
-    out = t + 0.15  # neofetch output begins
+    # 3) character-aligned typing with one active caret at a time
+    command_clips, session, out = typing_session(c)
+    defs.extend(command_clips)
 
     # 4) neofetch header
     ranked = d["top_starred"] or [("—", {"stars": 0})]
@@ -391,8 +414,10 @@ text{{font-family:{MONO}}}
 .i2{{font-size:19px;fill:{c["fg"]};opacity:0;animation:rise .6s cubic-bezier(.2,.9,.25,1.15) both}}
 .i3{{font-size:18px;fill:{c["muted"]};opacity:0;animation:rise .6s cubic-bezier(.2,.9,.25,1.15) both}}
 .bdg{{opacity:0;animation:spring .5s cubic-bezier(.34,1.56,.64,1) both}}
-.pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .3s ease-out both}}
+.pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .12s ease-out both}}
+.pr,.kc{{font-kerning:none;font-variant-ligatures:none}}
 .kc{{font-size:16px;fill:{c["fg"]}}}
+.typing-caret{{opacity:0}}
 .blink{{opacity:0;animation:blink 1.05s steps(1) infinite}}
 .host{{font-size:20px;font-weight:700;fill:{c["accent"]};opacity:0;animation:rise .5s cubic-bezier(.34,1.56,.64,1) both}}
 .since{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .4s ease-out both}}
@@ -405,13 +430,16 @@ text{{font-family:{MONO}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(10px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes spring{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
+@keyframes caret-move{{from{{transform:translateX(0)}}to{{transform:translateX(var(--travel))}}}}
+@keyframes caret-presence{{from{{opacity:1}}to{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
-@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.bdg,.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft{{opacity:1}}}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.bdg,.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft{{opacity:1}}.typing-caret{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
 {"".join(intro)}
 {"".join(badge_svg)}
-{"".join(session)}
+{session}
 {head}
 {langs_svg}
 {"".join(num)}

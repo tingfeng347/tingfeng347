@@ -26,7 +26,7 @@ class TypingMotionTests(unittest.TestCase):
             svg = dashboard.render(theme, data, "test", dt.date(2026, 10, 18), [])
             root = ET.fromstring(svg)
             css = root.find("s:style", ns).text
-            for text_class, clip_id in (("i2", "ic1"), ("i3", "ic2"), ("kc", "cc0")):
+            for text_class, clip_id in (("i1", "ic0"), ("i2", "ic1"), ("i3", "ic2"), ("kc", "cc0")):
                 with self.subTest(theme=theme, line=text_class):
                     text = "".join(root.find(f'.//s:text[@class="{text_class}"]', ns).itertext())
                     clip = root.find(f'.//s:clipPath[@id="{clip_id}"]/s:rect', ns)
@@ -37,7 +37,7 @@ class TypingMotionTests(unittest.TestCase):
                     offsets = [float(n) / 100 for n in re.findall(r"([\d.]+)%\{", rule)]
                     self.assertGreaterEqual(len(offsets), len(text))
                     for k in range(1, len(text)):
-                        if " " in text[k - 1:k + 1]:
+                        if text_class != "i1" and " " in text[k - 1:k + 1]:
                             continue
                         gap = (offsets[k] - offsets[k - 1]) * duration
                         # Allow serialized-duration rounding, but not a word beat.

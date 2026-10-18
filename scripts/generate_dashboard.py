@@ -6,8 +6,7 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion is choreographed on one timeline: the headline is static; subtitles and
-commands share the
+Motion is choreographed on one timeline: headline, subtitles and commands share the
 same per-character typing engine. Complete glyphs appear at each keystroke
 (lightly jittered, with a beat after every space) while the caret glides
 from cell to cell instead of snapping, handing over to the next prompt at the
@@ -51,7 +50,7 @@ WORD_BEAT = 0.04 / PLAYBACK_SPEED  # a breath after every space
 TYPE_LEAD = 0.16 / PLAYBACK_SPEED  # caret lead-in before the first keystroke
 TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
-TYPE_START = 0.26 / PLAYBACK_SPEED  # first subtitle keystroke
+TYPE_START = 0.26 / PLAYBACK_SPEED  # first headline keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
 SUBTITLE_SIZE = 18
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
@@ -261,14 +260,15 @@ def keystroke_times(text, start, rng):
     return lands
 
 
-def typing_track(text, advances, start, key, rng):
+def typing_track(text, advances, start, key, rng, steady=False):
     """Shared glyph landing times, stepped reveal and continuously moving caret.
 
     Advances are explicit so a wide emoji is revealed in one complete cell,
     just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
     keystroke intervals and word pauses, regardless of their font size.
     """
-    lands = keystroke_times(text, start, rng)
+    lands = ([start + k * TYPE_BASE for k in range(len(text))]
+             if steady else keystroke_times(text, start, rng))
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
     clip_dur = dur + TYPE_HOLD
@@ -364,7 +364,7 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) Show the headline immediately; type subtitles with the command engine.
+    # 1) Type the headline without pauses, then retain the subtitle rhythm.
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
@@ -388,8 +388,23 @@ def render(theme, d, sha, today, badges):
             width = sum(advances)
             line = (f'<text class="{cls}" x="{x:.3f}" y="{iy}" '
                     f'textLength="{width:.3f}" lengthAdjust="spacingAndGlyphs">{esc(text)}</text>')
+        elif cls == "i1":
+            # Keep the emoji in its own run, with prose rendered like terminal
+            # text rather than many independently positioned glyph spans.
+            runs, gx = [], x
+            offset = 0
+            for run in re.split('(👋)', text):
+                if not run:
+                    continue
+                run_width = sum(advances[offset:offset + len(run)])
+                runs.append(f'<tspan x="{gx:.3f}" textLength="{run_width:.3f}" '
+                            f'lengthAdjust="spacingAndGlyphs">{esc(run)}</tspan>')
+                gx += run_width
+                offset += len(run)
+            line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
+                    f'{"".join(runs)}</text>')
         else:
-            # Preserve the existing static headline and accepted second line.
+            # Preserve the accepted second subtitle's text layout.
             glyphs, gx = [], x
             for ch, advance in zip(text, advances):
                 glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
@@ -397,13 +412,8 @@ def render(theme, d, sha, today, badges):
                 gx += advance
             line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
                     f'{"".join(glyphs)}</text>')
-        if idx == 0:
-            intro.append(line)
-            iy += 40
-            continue
-
         key = f'intro{idx}'
-        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng)
+        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng, steady=idx == 0)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
@@ -420,16 +430,20 @@ def render(theme, d, sha, today, badges):
         t = end + TYPE_TAIL
         iy += 40 if size > 24 else 28
 
-    # 2) Compact reading-order cascade, matching the shared typing beat.
+    # 2) Complete badges follow one another without a row pause. A gliding
+    # caret tracks each reveal, without slicing badge icons or labels.
     badge_svg = []
     badge_idx = 0
     badge_start = t - TYPE_LEAD
     for r, row in enumerate(badges):
         total = sum(w for _, _, w, _, _ in row) + 8 * (len(row) - 1)
         x = (W - total) / 2
+        row_x = x
+        row_start = badge_start + badge_idx * BADGE_FADE
         row_svg = []
-        for kind, payload, bw, bh, color in row:
-            delay = badge_start + badge_idx * TYPE_BASE
+        glide = ['0%{transform:translateX(0)}']
+        for k, (kind, payload, bw, bh, color) in enumerate(row):
+            delay = badge_start + badge_idx * BADGE_FADE
             badge_idx += 1
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
@@ -439,11 +453,20 @@ def render(theme, d, sha, today, badges):
                          f'font-family="{MONO}" fill="#fff">{esc(payload)}</text>')
             row_svg.append(f'<g transform="translate({x:.1f},{146 + r * 26})">'
                            f'<g class="badge" style="animation-delay:{delay:.3f}s">{inner}</g></g>')
+            edge = x + bw - row_x + (8 if k < len(row) - 1 else 0)
+            glide.append(f'{(k + 1) / len(row) * 100:.4f}%{{transform:translateX({edge:.3f}px)}}')
             x += bw + 8
+        if row:
+            duration = len(row) * BADGE_FADE
+            intro_rules.append(f'@keyframes badge-caret{r}{{{"".join(glide)}}}')
+            row_svg.append(f'<rect class="typing-caret" x="{row_x:.3f}" y="{146 + r * 26}" '
+                           f'width="2" height="20" rx="1" fill="{c["fg"]}" '
+                           f'style="animation:badge-caret{r} {duration:.3f}s linear {row_start:.3f}s forwards,'
+                           f'caret-presence {duration:.3f}s linear {row_start:.3f}s forwards"/>')
         badge_svg.append("".join(row_svg))
 
     # 3) per-character typing, one gliding caret on screen at a time
-    command_start = badge_start + (badge_idx - 1) * TYPE_BASE + BADGE_FADE + TYPE_LEAD
+    command_start = badge_start + badge_idx * BADGE_FADE + TYPE_LEAD
     command_clips, session, caret_rules, out = typing_session(c, command_start)
     defs.extend(command_clips)
 

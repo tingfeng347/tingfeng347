@@ -51,8 +51,6 @@ TYPE_LEAD = 0.16 / PLAYBACK_SPEED  # caret lead-in before the first keystroke
 TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26 / PLAYBACK_SPEED  # first heading keystroke
-INTRO_SPEED = 2.0  # preserve the banner's faster pace relative to commands
-INTRO_TAIL = 0.20 / PLAYBACK_SPEED  # shorter handover between heading lines
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
 HEADLINE_FADE = 0.04  # soften large glyph onsets over a few display frames
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
@@ -250,19 +248,19 @@ def wipe(cid, x, y, w, h, begin, dur):
             f'</clipPath>')
 
 
-def typing_track(text, advances, start, key, rng, speed=1.0):
+def typing_track(text, advances, start, key, rng):
     """Shared glyph landing times, stepped reveal and continuously moving caret.
 
     Advances are explicit so a wide emoji is revealed in one complete cell,
-    just like an ASCII letter. Speed scales glyph and caret timing together;
-    both sections follow PLAYBACK_SPEED, with a faster rendition for the intro.
+    just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
+    keystroke intervals and word pauses, regardless of their font size.
     """
     lands, at = [], start
     for k, ch in enumerate(text):
         if k:
-            at += (TYPE_BASE + rng.uniform(-TYPE_JITTER, TYPE_JITTER)) / speed
+            at += TYPE_BASE + rng.uniform(-TYPE_JITTER, TYPE_JITTER)
             if ch == " " or text[k - 1] == " ":
-                at += WORD_BEAT / speed
+                at += WORD_BEAT
         lands.append(at)
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
@@ -370,7 +368,7 @@ def render(theme, d, sha, today, badges):
         width = sum(advances)
         x = mid - width / 2
         key = f'intro{idx}'
-        track_rules, dur, end, lands = typing_track(text, advances, t, key, intro_rng, INTRO_SPEED)
+        track_rules, dur, end, lands = typing_track(text, advances, t, key, intro_rng)
         intro_rules.extend(track_rules)
         if idx:
             defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
@@ -398,12 +396,12 @@ def render(theme, d, sha, today, badges):
         intro.append(f'<rect class="typing-caret" x="{x + 2:.3f}" y="{iy - size * .8:.3f}" '
                      f'width="2" height="{size * 1.05:.3f}" rx="1" fill="{c["fg"]}" '
                      f'style="animation:caret{key} {TYPE_LEAD + dur:.3f}s linear '
-                     f'{t - TYPE_LEAD:.3f}s forwards,caret-presence {dur + INTRO_TAIL:.3f}s '
+                     f'{t - TYPE_LEAD:.3f}s forwards,caret-presence {dur + TYPE_TAIL:.3f}s '
                      f'linear {t - TYPE_LEAD:.3f}s forwards"/>')
-        t = end + INTRO_TAIL
+        t = end + TYPE_TAIL
         iy += 40 if size > 24 else 28
 
-    # 2) Compact reading-order cascade, matching the faster intro beat.
+    # 2) Compact reading-order cascade, matching the shared typing beat.
     badge_svg = []
     badge_idx = 0
     badge_start = t - TYPE_LEAD
@@ -412,7 +410,7 @@ def render(theme, d, sha, today, badges):
         x = (W - total) / 2
         row_svg = []
         for kind, payload, bw, bh, color in row:
-            delay = badge_start + badge_idx * TYPE_BASE / INTRO_SPEED
+            delay = badge_start + badge_idx * TYPE_BASE
             badge_idx += 1
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
@@ -426,7 +424,7 @@ def render(theme, d, sha, today, badges):
         badge_svg.append("".join(row_svg))
 
     # 3) per-character typing, one gliding caret on screen at a time
-    command_start = badge_start + (badge_idx - 1) * TYPE_BASE / INTRO_SPEED + BADGE_FADE + TYPE_LEAD
+    command_start = badge_start + (badge_idx - 1) * TYPE_BASE + BADGE_FADE + TYPE_LEAD
     command_clips, session, caret_rules, out = typing_session(c, command_start)
     defs.extend(command_clips)
 

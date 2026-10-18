@@ -261,19 +261,14 @@ def keystroke_times(text, start, rng):
     return lands
 
 
-def typing_track(text, advances, start, key, rng, cadence=None):
+def typing_track(text, advances, start, key, rng):
     """Shared glyph landing times, stepped reveal and continuously moving caret.
 
     Advances are explicit so a wide emoji is revealed in one complete cell,
     just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
     keystroke intervals and word pauses, regardless of their font size.
     """
-    if cadence is None:
-        lands = keystroke_times(text, start, rng)
-    else:
-        if len(cadence) < len(text):
-            raise ValueError("The reference cadence must cover the entire typed line")
-        lands = [start + offset for offset in cadence[:len(text)]]
+    lands = keystroke_times(text, start, rng)
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
     clip_dur = dur + TYPE_HOLD
@@ -373,33 +368,42 @@ def render(theme, d, sha, today, badges):
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
-    # Use the existing Building… rhythm as the reference for both subtitles.
-    # Advance the RNG past the original Focused… run so the reference line's
-    # accepted rhythm stays unchanged, rather than generating a new pattern.
-    keystroke_times(INTRO[1][0], 0, intro_rng)
-    subtitle_cadence = keystroke_times(INTRO[2][0], 0, intro_rng)
     t = TYPE_START
     for idx, (text, size, cls) in enumerate(INTRO):
         advances = [size * (1.25 if unicodedata.east_asian_width(ch) in "WF" else .6)
                     for ch in text]
         width = sum(advances)
         x = mid - width / 2
-        # Explicit cells prevent font fallback (especially emoji) from moving
-        # glyph edges away from the shared clip and caret landing positions.
-        glyphs, gx = [], x
-        for ch, advance in zip(text, advances):
-            glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
-                          f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
-            gx += advance
-        line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
-                f'{"".join(glyphs)}</text>')
+        # Match the terminal's prompt + single text run. The emoji is a fixed
+        # prefix, not a double-width keystroke; only the prose is typed.
+        if cls == "i2":
+            prefix, text = text.split(" ", 1)
+            prefix_width = sum(advances[:len(prefix) + 1])
+            intro.append(f'<text class="subtitle-icon" x="{x:.3f}" y="{iy}" '
+                         f'textLength="{prefix_width:.3f}" lengthAdjust="spacingAndGlyphs" '
+                         f'xml:space="preserve" style="animation-delay:{t - TYPE_LEAD:.3f}s">'
+                         f'{esc(prefix)} </text>')
+            x += prefix_width
+            advances = advances[len(prefix) + 1:]
+            width = sum(advances)
+            line = (f'<text class="{cls}" x="{x:.3f}" y="{iy}" '
+                    f'textLength="{width:.3f}" lengthAdjust="spacingAndGlyphs">{esc(text)}</text>')
+        else:
+            # Preserve the existing static headline and accepted second line.
+            glyphs, gx = [], x
+            for ch, advance in zip(text, advances):
+                glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
+                              f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
+                gx += advance
+            line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
+                    f'{"".join(glyphs)}</text>')
         if idx == 0:
             intro.append(line)
             iy += 40
             continue
 
         key = f'intro{idx}'
-        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng, subtitle_cadence)
+        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
@@ -542,6 +546,7 @@ text{{font-family:{MONO}}}
 .i2,.i3{{font-size:{SUBTITLE_SIZE}px}}
 .i2{{fill:{c["fg"]}}}
 .i3{{fill:{c["muted"]}}}
+.subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
@@ -566,7 +571,7 @@ text{{font-family:{MONO}}}
 @keyframes caret-presence{{0%{{opacity:0}}3%{{opacity:1}}99.5%{{opacity:1}}100%{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
-.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.i1,.i2,.i3,.badge{{opacity:1}}
+.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.i1,.i2,.i3,.subtitle-icon,.badge{{opacity:1}}
 .cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>

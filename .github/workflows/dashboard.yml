@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Check typing motion regressions
+        run: python -m unittest discover -s tests -v
+
       # PROFILE_TOKEN (a PAT with read:user) counts private contributions too;
       # without it the default token renders public activity only.
       - name: Render dashboard SVGs

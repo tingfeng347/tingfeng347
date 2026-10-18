@@ -3,20 +3,20 @@
 
 Layout, animated on load: a centred intro banner, the tech-stack badges, a short
 self-typing coding session (ending on `neofetch`), then the neofetch output — a
-language bar, five headline numbers and a yearly contribution heatmap — all
+language bar, five headline numbers and an animated contribution snake — all
 driven by real GitHub data.
 
 Motion is choreographed on one timeline: headline, subtitles and commands share the
 same per-character typing engine. Complete glyphs appear at each keystroke
 (lightly jittered, with a beat after every space) while the caret glides
 from cell to cell instead of snapping, handing over to the next prompt at the
-exact moment that prompt appears. The language bar and heatmap each use a single
-continuous clip reveal.
-All motion uses CSS, so reduced-motion readers see the complete static plate.
+exact moment that prompt appears. The snake starts when its terminal output
+appears and loops independently. Reduced-motion readers see a static grid.
 
 One self-contained SVG per colour scheme. shields.io badges are fetched once and
-inlined as data URIs (with a flat-chip fallback), so nothing external is needed
-at render time and it animates inside a README <img>.
+inlined as data URIs (with a flat-chip fallback). Snake SVGs are refreshed from
+the existing output branch and inlined with isolated CSS; committed copies
+provide an offline fallback. No external resources are needed at render time.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -35,12 +35,13 @@ import sys
 import time
 import unicodedata
 import urllib.request
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 LOGIN = sys.argv[1] if len(sys.argv) > 1 else "tingfeng347"
 OUT = Path(__file__).resolve().parent.parent / "assets"
 
-W, H = 1160, 800
+W, H = 1160, 900
 X0 = 40
 ADV = 9.6  # monospace cell at 16px
 PLAYBACK_SPEED = 2.0  # double all typing and handover speeds together
@@ -53,6 +54,8 @@ TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26 / PLAYBACK_SPEED  # first headline keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
 SUBTITLE_SIZE = 18
+SVG_NS = "http://www.w3.org/2000/svg"
+ET.register_namespace("", SVG_NS)
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -233,6 +236,73 @@ def load_badges():
     return rows
 
 
+def refresh_snakes():
+    """Refresh the daily snake assets published by the existing snake workflow."""
+    for theme, suffix in (("light", ""), ("dark", "-dark")):
+        cached = OUT / f"snake-{theme}.svg"
+        url = (f"https://raw.githubusercontent.com/{LOGIN}/{LOGIN}/output/"
+               f"github-contribution-grid-snake{suffix}.svg")
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": LOGIN})
+            with urllib.request.urlopen(req, timeout=20) as response:
+                svg = response.read().decode("utf-8")
+            # Validate before replacing a working offline copy.
+            embed_snake(svg, 0)
+            cached.write_text(svg, encoding="utf-8")
+        except (OSError, UnicodeError, ET.ParseError, ValueError) as exc:
+            if not cached.exists():
+                raise
+            print(f"snake {theme}: using cached asset ({type(exc).__name__})", file=sys.stderr)
+
+
+def embed_snake(svg, begin):
+    """Inline Platane/snk artwork, namespacing its CSS and aligning playback.
+
+    Nested remote images cannot be relied upon in a README image. Keep the
+    original vector animation in this document instead. In particular snk's
+    `.cc` cell class must never inherit our command clip's scaleX(0).
+    """
+    root = ET.fromstring(svg)
+    if root.tag != f"{{{SVG_NS}}}svg":
+        raise ValueError("Expected an SVG snake asset")
+    style = root.find(f"{{{SVG_NS}}}style")
+    if style is None or not style.text:
+        raise ValueError("Snake asset has no animation stylesheet")
+    # The generated artwork only needs vector shapes and CSS, never scripts,
+    # external images, event handlers or embedded HTML.
+    allowed = {"svg", "desc", "title", "style", "rect", "g", "path", "defs", "clipPath"}
+    for node in root.iter():
+        if node.tag.removeprefix(f"{{{SVG_NS}}}") not in allowed:
+            raise ValueError("Unexpected element in snake asset")
+        if any(key.lower().startswith("on") or key.endswith("href") for key in node.attrib):
+            raise ValueError("Unexpected external reference in snake asset")
+
+    css = style.text
+    classes = {name for node in root.iter() for name in node.get("class", "").split()}
+    names = re.findall(r"@keyframes\s+([\w-]+)", css)
+    if not names or "s" not in classes:
+        raise ValueError("Snake animation is missing")
+    for node in root.iter():
+        if "class" in node.attrib:
+            node.set("class", " ".join(f"snk-{name}" for name in node.get("class").split()))
+    selectors = "|".join(re.escape(name) for name in sorted(classes, key=len, reverse=True))
+    css = re.sub(r"\.(" + selectors + r")(?![\w-])", lambda m: f".snk-{m[1]}", css)
+    css = css.replace(":root", ".snake-art")
+    css = re.sub(r"(@keyframes\s+|animation-name\s*:\s*)([\w-]+)",
+                 lambda m: m[1] + (f"snk-{m[2]}" if m[2] in names else m[2]), css)
+    css += (f".snake-art .snk-c,.snake-art .snk-s,.snake-art .snk-u"
+            f"{{animation-delay:{begin:.3f}s;animation-fill-mode:backwards}}")
+    style.text = css
+    root.set("class", "snake-art")
+    root.set("x", str(X0))
+    root.set("y", "582")
+    root.set("width", str(W - 2 * X0))
+    root.set("height", "236")
+    root.set("preserveAspectRatio", "xMidYMid meet")
+    return (f'<g class="snake-panel" style="animation-delay:{begin:.3f}s">'
+            f'{ET.tostring(root, encoding="unicode")}</g>')
+
+
 # ── drawing helpers ───────────────────────────────────────────────────
 
 def esc(text):
@@ -346,15 +416,6 @@ def typing_session(c, start):
         f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="2" height="17" rx="1" '
         f'fill="{c["fg"]}" style="animation-delay:{typing_end:.3f}s"/>')
     return clips, "".join(session), rules, typing_end + 0.16
-
-
-def level(count, top):
-    if count <= 0:
-        return 0
-    for lvl, cut in ((4, 0.55), (3, 0.3), (2, 0.12)):
-        if count >= max(1, top * cut):
-            return lvl
-    return 1
 
 
 # ── plate ─────────────────────────────────────────────────────────────
@@ -524,37 +585,10 @@ def render(theme, d, sha, today, badges):
                    f'style="animation-delay:{delay:.2f}s">{esc(value)}</text>')
         lab.append(f'<text class="nl" x="{sx}" y="564" style="animation-delay:{delay + 0.05:.2f}s">{esc(label)}</text>')
 
-    # 7) yearly heatmap, revealed by a single left→right wipe
-    weeks = d["weeks"]
-    cell, gap = 13, 3
-    step = cell + gap
-    hx, hy = X0, 604
-    top_count = max((n for w in weeks for _, n in w), default=1)
-    heat = []
-    for col in range(len(weeks)):
-        for row, (_, n) in enumerate(weeks[col]):
-            heat.append(f'<rect x="{hx + col * step}" y="{hy + row * step}" width="{cell}" '
-                        f'height="{cell}" rx="2.5" fill="{c["heat"][level(n, top_count)]}"/>')
-    defs.append(wipe("heat", hx, hy - 1, len(weeks) * step + 1, 7 * step + 2, out + 0.5, 0.66))
-    months, seen = [], set()
-    for col, week in enumerate(weeks):
-        first = dt.date.fromisoformat(week[0][0])
-        if first.month not in seen and first.day <= 14:
-            seen.add(first.month)
-            months.append(f'<text class="mo" x="{hx + col * step}" y="{hy - 8}" '
-                          f'style="animation-delay:{out + 0.6:.2f}s">{first.strftime("%b")}</text>')
-
-    legend_x = hx + len(weeks) * step + 28
-    hleg = f'<text class="lg" x="{legend_x}" y="{hy + 26}" style="animation-delay:{out + 1.0:.2f}s">Less</text>'
-    hleg += "".join(
-        f'<rect x="{legend_x + 34 + i * (cell + 3)}" y="{hy + 14}" width="{cell}" height="{cell}" '
-        f'rx="2.5" fill="{col}" style="opacity:0;animation:fade .4s ease-out {out + 1.0 + i * 0.06:.2f}s forwards"/>'
-        for i, col in enumerate(c["heat"]))
-    hleg += (f'<text class="lg" x="{legend_x + 34 + 5 * (cell + 3) + 2}" y="{hy + 26}" '
-             f'style="animation-delay:{out + 1.0:.2f}s">More</text>')
-
-    cap = (f'<text class="cap" x="{X0}" y="{hy + 7 * step + 30}" style="animation-delay:{out + 1.05:.2f}s">'
-           f'{d["contributions"]:,} contributions in the last year · {len(weeks)} weeks · '
+    # 7) Inline the existing snake animation; start it with the terminal output.
+    snake = embed_snake((OUT / f"snake-{theme}.svg").read_text(encoding="utf-8"), out + .5)
+    cap = (f'<text class="cap" x="{X0}" y="848" style="animation-delay:{out + 1.05:.2f}s">'
+           f'{d["contributions"]:,} contributions in the last year · {len(d["weeks"])} weeks · '
            f'{d["active_days"]} active days</text>')
     footer = (f'<text class="ft" x="{X0}" y="{H - 24}" style="animation-delay:{out + 1.1:.2f}s">'
               f'{LOGIN}.github.io</text>'
@@ -570,6 +604,7 @@ text{{font-family:{MONO}}}
 .i2{{fill:{c["fg"]}}}
 .i3{{fill:{c["muted"]}}}
 .subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
+.snake-panel{{opacity:0;animation:fade .45s ease-out both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
@@ -582,7 +617,6 @@ text{{font-family:{MONO}}}
 .lg{{font-size:13px;fill:{c["fg"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
 .num{{font-size:30px;font-weight:700;letter-spacing:-.5px;opacity:0;animation:rise .6s cubic-bezier(.16,1,.3,1) both}}
 .nl{{font-size:12px;fill:{c["muted"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
-.mo{{font-size:11px;fill:{c["muted"]};text-anchor:middle;opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
 .cap{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
 .ft{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
 {"\n".join(caret_rules)}
@@ -594,8 +628,9 @@ text{{font-family:{MONO}}}
 @keyframes caret-presence{{0%{{opacity:0}}3%{{opacity:1}}99.5%{{opacity:1}}100%{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
-.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.i1,.i2,.i3,.subtitle-icon,.badge{{opacity:1}}
-.cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}}}
+.pr,.blink,.host,.since,.lg,.num,.nl,.cap,.ft,.i1,.i2,.i3,.subtitle-icon,.badge,.snake-panel{{opacity:1}}
+.cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}
+.snake-art .snk-s,.snake-art .snk-u{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
 {"".join(intro)}
@@ -605,9 +640,7 @@ text{{font-family:{MONO}}}
 {langs_svg}
 {"".join(num)}
 {"".join(lab)}
-<g clip-path="url(#heat)">{"".join(heat)}</g>
-{"".join(months)}
-{hleg}
+{snake}
 {cap}
 {footer}
 </svg>
@@ -620,6 +653,8 @@ def main():
         sys.exit("GITHUB_TOKEN is not set")
     d = fetch(token)
     badges = load_badges()
+    OUT.mkdir(exist_ok=True)
+    refresh_snakes()
     n_img = sum(1 for row in badges for b in row if b[0] == "img")
     today = dt.date.fromisoformat(d["weeks"][-1][-1][0])
     sha = head_hash()

@@ -11,7 +11,7 @@
     <img
       width="100%"
       src="./assets/terminal-dark.svg"
-      alt="tingfeng347 — animated terminal: intro, a typing session, then languages, contributions and a yearly heatmap"
+      alt="tingfeng347 — animated terminal: intro, a typing session, languages, contribution stats and a looping contribution snake"
     />
   </picture>
 </p>
@@ -68,27 +68,6 @@ Mac                      1 hr 25 mins        ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 
  Last Updated on 17/10/2026 20:20:28 UTC
 <!--END_SECTION:waka-->
-
-<br/>
-
-<h2 align="center">Contribution Snake</h2>
-
-<div align="center">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake-dark.svg"
-    />
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
-    />
-    <img
-      alt="contribution snake"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/output/github-contribution-grid-snake.svg"
-    />
-  </picture>
-</div>
 
 <br/>
 

@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Check typing motion regressions
+      - name: Check dashboard animation regressions
         run: python -m unittest discover -s tests -v
 
       # PROFILE_TOKEN (a PAT with read:user) counts private contributions too;
@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/terminal-dark.svg assets/terminal-light.svg
+          git add assets/terminal-dark.svg assets/terminal-light.svg assets/snake-dark.svg assets/snake-light.svg
           if git diff --cached --quiet; then
             echo "no changes"
             exit 0

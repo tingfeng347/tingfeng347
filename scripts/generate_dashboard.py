@@ -6,9 +6,12 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion stays small: the intro and three badge rows enter as four calm groups;
-each command uses one character-stepped clip and a synced caret. The language
-bar and heatmap each use a single continuous clip reveal.
+Motion is choreographed on one timeline: the intro lines and every badge rise in
+on a single expo-out curve, then each command is typed on its own per-character
+timing (lightly jittered, with a beat after every space) while its caret glides
+from cell to cell instead of snapping, handing over to the next prompt at the
+exact moment that prompt appears. The language bar and heatmap each use a single
+continuous clip reveal.
 All motion uses CSS, so reduced-motion readers see the complete static plate.
 
 One self-contained SVG per colour scheme. shields.io badges are fetched once and
@@ -25,6 +28,7 @@ import base64
 import datetime as dt
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -38,9 +42,13 @@ OUT = Path(__file__).resolve().parent.parent / "assets"
 W, H = 1160, 800
 X0 = 40
 ADV = 9.6  # monospace cell at 16px
-TYPE_INTERVAL = 0.04  # each character survives at least two frames at 60 Hz
-LINE_PAUSE = 0.18
-PROMPT_LEAD = 0.12
+TYPE_BASE = 0.045  # steady pace between keystrokes, ~2.7 frames at 60 Hz
+TYPE_JITTER = 0.008  # ± variance, so the rhythm reads human, not metronomic
+WORD_BEAT = 0.04  # a breath after every space
+TYPE_LEAD = 0.16  # the caret waits at the prompt before the first key lands
+TYPE_TAIL = 0.30  # beat between one command and the next prompt
+TYPE_START = 1.30  # first prompt, as the badge cascade settles
+RNG = random.Random(20261018)  # characters jitter the same way every run
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -227,48 +235,89 @@ def esc(text):
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def wipe(cid, x, y, w, h, begin, dur, steps=None):
+def wipe(cid, x, y, w, h, begin, dur):
     """Reveal a fixed-size clip with a transform; CSS can disable it accessibly."""
-    easing = f"steps({steps},end)" if steps else "linear"
     return (f'<clipPath id="{cid}" clipPathUnits="userSpaceOnUse">'
             f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" '
             f'style="transform-origin:{x:.1f}px {y:.1f}px;'
-            f'animation:reveal {dur:.2f}s {easing} {begin:.2f}s both"/></clipPath>')
+            f'animation:reveal {dur:.2f}s cubic-bezier(.25,1,.4,1) {begin:.2f}s both"/>'
+            f'</clipPath>')
 
 
 def typing_session(c):
-    """Keep character reveals, moving carets and output on the same timeline."""
+    """Bake one timeline per command so glyphs, clip and caret cannot drift.
+
+    Every character gets its own landing time — lightly jittered, with a beat
+    after each space — and all three moving parts are generated from that one
+    list: the clip jump that reveals the glyph, the caret, and how long the
+    caret lives. The caret interpolates between cell boundaries rather than
+    snapping to them, so nothing on screen ever jumps a whole character, and
+    each caret is retired at the instant the next prompt fades in, so two
+    carets are never visible at once.
+    """
     prompt = f"{LOGIN}@github ~ ❯ "
     prompt_w = len(prompt) * ADV
     cmd_x = X0 + prompt_w
-    clips, session, t = [], [], 1.1
+    clips, session, rules = [], [], []
+    t = TYPE_START
     for i, cmd in enumerate(COMMANDS):
         ly = 252 + i * 26
-        width = len(cmd) * ADV
-        dur = len(cmd) * TYPE_INTERVAL
-        clips.append(wipe(f"cc{i}", cmd_x, ly - 16, width, 24, t, dur, len(cmd)))
+        n = len(cmd)
+        width = n * ADV
+        p = t - TYPE_LEAD  # prompt and caret appear here, typing starts at t
+        lands, at = [], t
+        for k, ch in enumerate(cmd):
+            if k:
+                at += TYPE_BASE + RNG.uniform(-TYPE_JITTER, TYPE_JITTER)
+                if ch == " " or cmd[k - 1] == " ":
+                    at += WORD_BEAT
+            lands.append(at)
+        dur = max(lands[-1] - t, 0.08)
+        span = TYPE_LEAD + dur  # caret timeline: prompt → last glyph lands
+
+        glide = ['0%{transform:translateX(0)}',
+                 f'{TYPE_LEAD * 0.55 / span * 100:.4f}%{{transform:translateX(0)}}']
+        for k, when in enumerate(lands):
+            glide.append(f'{(TYPE_LEAD + when - t) / span * 100:.4f}%'
+                         f'{{transform:translateX({(k + 1) * ADV:.1f}px)}}')
+        rules.append(f'@keyframes caret{i}{{{"".join(glide)}}}')
+
+        reveal = []
+        for k, when in enumerate(lands[:-1]):
+            reveal.append(f'{(when - t) / dur * 100:.4f}%'
+                          f'{{transform:scaleX({(k + 1) / n:.5f});'
+                          f'animation-timing-function:steps(1,end)}}')
+        reveal.append('100%{transform:scaleX(1)}')
+        rules.append(f'@keyframes clip{i}{{{"".join(reveal)}}}')
+
+        clips.append(
+            f'<clipPath id="cc{i}" clipPathUnits="userSpaceOnUse">'
+            f'<rect class="cc" x="{cmd_x:.1f}" y="{ly - 16}" width="{width:.1f}" height="24" '
+            f'style="transform-origin:{cmd_x:.1f}px {ly - 16:.1f}px;'
+            f'animation:clip{i} {dur:.3f}s linear {t:.3f}s forwards"/></clipPath>')
         session.append(
             f'<text class="pr" x="{X0}" y="{ly}" xml:space="preserve" '
             f'textLength="{prompt_w:.1f}" lengthAdjust="spacingAndGlyphs" '
-            f'style="animation-delay:{t - PROMPT_LEAD:.2f}s">{esc(prompt)}</text>')
+            f'style="animation-delay:{p:.3f}s">{esc(prompt)}</text>')
         session.append(
             f'<g clip-path="url(#cc{i})">'
             f'<text class="kc" x="{cmd_x:.1f}" y="{ly}" '
             f'textLength="{width:.1f}" lengthAdjust="spacingAndGlyphs">{esc(cmd)}</text></g>')
+        # last caret hands over to the blinking one; earlier ones to the next prompt
+        life = TYPE_LEAD + dur if i == len(COMMANDS) - 1 else dur + TYPE_TAIL
         session.append(
-            f'<rect class="typing-caret" x="{cmd_x + 2:.1f}" y="{ly - 13}" '
-            f'width="2" height="17" fill="{c["fg"]}" '
-            f'style="--travel:{width:.1f}px;'
-            f'animation:caret-move {dur:.2f}s steps({len(cmd)},end) {t:.2f}s both,'
-            f'caret-presence {dur + LINE_PAUSE:.2f}s steps(1,end) '
-            f'{t - PROMPT_LEAD:.2f}s forwards"/>')
-        t += dur + LINE_PAUSE
+            f'<rect class="typing-caret" x="{cmd_x + 2:.1f}" y="{ly - 13}" width="2" height="17" '
+            f'rx="1" fill="{c["fg"]}" style="animation:caret{i} {span:.3f}s linear {p:.3f}s forwards,'
+            f'caret-presence {life:.3f}s linear {p:.3f}s forwards"/>')
+        t = lands[-1] + TYPE_TAIL
+
+    typing_end = t - TYPE_TAIL
     last_y = 252 + (len(COMMANDS) - 1) * 26
     caret_x = cmd_x + len(COMMANDS[-1]) * ADV + 2
     session.append(
-        f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="2" height="17" '
-        f'fill="{c["fg"]}" style="animation-delay:{t - PROMPT_LEAD:.2f}s"/>')
-    return clips, "".join(session), t + 0.15
+        f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 13}" width="2" height="17" rx="1" '
+        f'fill="{c["fg"]}" style="animation-delay:{typing_end:.3f}s"/>')
+    return clips, "".join(session), rules, typing_end + 0.16
 
 
 def level(count, top):
@@ -287,33 +336,34 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) centred intro banner, moving together so its text stays aligned
+    # 1) centred intro banner: one expo-out rise per line, 0.11s apart
     intro, iy = [], 46
-    for text, size, cls in INTRO:
-        intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" '
-                     f'text-anchor="middle">{esc(text)}</text>')
+    for idx, (text, size, cls) in enumerate(INTRO):
+        intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle" '
+                     f'style="animation-delay:{0.06 + idx * 0.11:.3f}s">{esc(text)}</text>')
         iy += 40 if size > 24 else 28
 
-    # 2) three closely staggered rows, settled before the first prompt at 0.98s
+    # 2) badges cascade left→right across the three rows, settling by ~1.3s
     badge_svg = []
     for r, row in enumerate(badges):
         total = sum(w for _, _, w, _, _ in row) + 8 * (len(row) - 1)
         x = (W - total) / 2
         row_svg = []
-        for kind, payload, bw, bh, color in row:
+        for k, (kind, payload, bw, bh, color) in enumerate(row):
+            delay = 0.30 + r * 0.10 + k * 0.034
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
             else:
                 inner = (f'<rect width="{bw:.0f}" height="{bh:.0f}" rx="3" fill="#{color}"/>'
                          f'<text x="{bw / 2:.0f}" y="13.5" text-anchor="middle" font-size="11" '
                          f'font-family="{MONO}" fill="#fff">{esc(payload)}</text>')
-            row_svg.append(f'<g transform="translate({x:.1f},{146 + r * 26})">{inner}</g>')
+            row_svg.append(f'<g transform="translate({x:.1f},{146 + r * 26})">'
+                           f'<g class="badge" style="animation-delay:{delay:.3f}s">{inner}</g></g>')
             x += bw + 8
-        badge_svg.append(f'<g class="badge-row" style="animation-delay:{0.2 + r * 0.08:.2f}s">'
-                         f'{"".join(row_svg)}</g>')
+        badge_svg.append("".join(row_svg))
 
-    # 3) character-aligned typing with one active caret at a time
-    command_clips, session, out = typing_session(c)
+    # 3) per-character typing, one gliding caret on screen at a time
+    command_clips, session, caret_rules, out = typing_session(c)
     defs.extend(command_clips)
 
     # 4) neofetch header
@@ -338,7 +388,7 @@ def render(theme, d, sha, today, badges):
         bar.append(f'<rect x="{cursor_x:.1f}" y="{bar_y}" width="{seg:.1f}" height="{bar_h}" '
                    f'rx="3" fill="{LANG_COLORS[i % len(LANG_COLORS)]}"/>')
         cursor_x += seg + 3
-    defs.append(wipe("bar", bar_x, bar_y, bar_w, bar_h, out + 0.15, 0.55))
+    defs.append(wipe("bar", bar_x, bar_y, bar_w, bar_h, out + 0.16, 0.62))
     legend, lx = [], bar_x
     for i, (name, count) in enumerate(langs):
         col = LANG_COLORS[i % len(LANG_COLORS)]
@@ -381,7 +431,7 @@ def render(theme, d, sha, today, badges):
         for row, (_, n) in enumerate(weeks[col]):
             heat.append(f'<rect x="{hx + col * step}" y="{hy + row * step}" width="{cell}" '
                         f'height="{cell}" rx="2.5" fill="{c["heat"][level(n, top_count)]}"/>')
-    defs.append(wipe("heat", hx, hy - 1, len(weeks) * step + 1, 7 * step + 2, out + 0.55, 0.7))
+    defs.append(wipe("heat", hx, hy - 1, len(weeks) * step + 1, 7 * step + 2, out + 0.5, 0.66))
     months, seen = [], set()
     for col, week in enumerate(weeks):
         first = dt.date.fromisoformat(week[0][0])
@@ -414,32 +464,36 @@ text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
 .i2{{font-size:19px;fill:{c["fg"]}}}
 .i3{{font-size:18px;fill:{c["muted"]}}}
-.intro,.badge-row{{animation:header-enter .56s cubic-bezier(.22,1,.36,1) both}}
-.intro{{animation-duration:.72s;animation-delay:.04s}}
-.pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .12s ease-out both}}
+.i1,.i2,.i3{{opacity:0;animation:enter .85s cubic-bezier(.16,1,.3,1) both}}
+.badge{{opacity:0;animation:badge-in .58s cubic-bezier(.16,1,.3,1) both}}
+.pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc{{font-kerning:none;font-variant-ligatures:none}}
 .kc{{font-size:16px;fill:{c["fg"]}}}
+.cc{{transform:scaleX(0)}}
 .typing-caret{{opacity:0}}
-.blink{{opacity:0;animation:blink 1.05s steps(1) infinite}}
-.host{{font-size:20px;font-weight:700;fill:{c["accent"]};opacity:0;animation:rise .5s cubic-bezier(.34,1.56,.64,1) both}}
-.since{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .4s ease-out both}}
-.lg{{font-size:13px;fill:{c["fg"]};opacity:0;animation:fade .45s ease-out both}}
-.num{{font-size:30px;font-weight:700;letter-spacing:-.5px;opacity:0;animation:rise .55s cubic-bezier(.34,1.56,.64,1) both}}
-.nl{{font-size:12px;fill:{c["muted"]};opacity:0;animation:fade .45s ease-out both}}
-.mo{{font-size:11px;fill:{c["muted"]};text-anchor:middle;opacity:0;animation:fade .5s ease-out both}}
-.cap{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .5s ease-out both}}
-.ft{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .5s ease-out both}}
+.blink{{opacity:0;animation:blink 1.1s steps(1,end) infinite}}
+.host{{font-size:20px;font-weight:700;fill:{c["accent"]};opacity:0;animation:rise .55s cubic-bezier(.16,1,.3,1) both}}
+.since{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.lg{{font-size:13px;fill:{c["fg"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.num{{font-size:30px;font-weight:700;letter-spacing:-.5px;opacity:0;animation:rise .6s cubic-bezier(.16,1,.3,1) both}}
+.nl{{font-size:12px;fill:{c["muted"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.mo{{font-size:11px;fill:{c["muted"]};text-anchor:middle;opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
+.cap{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
+.ft{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
+{"\n".join(caret_rules)}
+@keyframes enter{{from{{opacity:0;transform:translateY(13px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes badge-in{{from{{opacity:0;transform:translateY(9px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes fade{{to{{opacity:1}}}}
-@keyframes rise{{from{{opacity:0;transform:translateY(10px)}}to{{opacity:1;transform:translateY(0)}}}}
-@keyframes header-enter{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
-@keyframes caret-move{{from{{transform:translateX(0)}}to{{transform:translateX(var(--travel))}}}}
-@keyframes caret-presence{{from{{opacity:1}}to{{opacity:0}}}}
+@keyframes caret-presence{{0%{{opacity:0}}3%{{opacity:1}}99.5%{{opacity:1}}100%{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
-@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft{{opacity:1}}.typing-caret{{display:none}}}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
+.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.i1,.i2,.i3,.badge{{opacity:1}}
+.cc{{transform:none!important}}.typing-caret{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
-<g class="intro">{"".join(intro)}</g>
+{"".join(intro)}
 {"".join(badge_svg)}
 {session}
 {head}

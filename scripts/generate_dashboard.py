@@ -50,6 +50,8 @@ TYPE_LEAD = 0.16  # the caret waits at the prompt before the first key lands
 TYPE_TAIL = 0.30  # beat between one command and the next prompt
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26  # first heading keystroke, after its caret appears
+INTRO_SPEED = 2.0  # faster banner, without changing command typing speed
+INTRO_TAIL = 0.20  # shorter handover between heading lines
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -245,19 +247,19 @@ def wipe(cid, x, y, w, h, begin, dur):
             f'</clipPath>')
 
 
-def typing_track(text, advances, start, key, rng):
+def typing_track(text, advances, start, key, rng, speed=1.0):
     """Shared glyph landing times, stepped reveal and continuously moving caret.
 
     Advances are explicit so a wide emoji is revealed in one complete cell,
-    just like an ASCII letter. Do not rescale time for the intro: its rhythm
-    must be the same as the terminal commands.
+    just like an ASCII letter. Speed scales glyph and caret timing together;
+    commands keep the original pace while the intro uses a faster rendition.
     """
     lands, at = [], start
     for k, ch in enumerate(text):
         if k:
-            at += TYPE_BASE + rng.uniform(-TYPE_JITTER, TYPE_JITTER)
+            at += (TYPE_BASE + rng.uniform(-TYPE_JITTER, TYPE_JITTER)) / speed
             if ch == " " or text[k - 1] == " ":
-                at += WORD_BEAT
+                at += WORD_BEAT / speed
         lands.append(at)
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
@@ -365,7 +367,7 @@ def render(theme, d, sha, today, badges):
         width = sum(advances)
         x = mid - width / 2
         key = f'intro{idx}'
-        track_rules, dur, end = typing_track(text, advances, t, key, intro_rng)
+        track_rules, dur, end = typing_track(text, advances, t, key, intro_rng, INTRO_SPEED)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
@@ -386,12 +388,12 @@ def render(theme, d, sha, today, badges):
         intro.append(f'<rect class="typing-caret" x="{x + 2:.3f}" y="{iy - size * .8:.3f}" '
                      f'width="2" height="{size * 1.05:.3f}" rx="1" fill="{c["fg"]}" '
                      f'style="animation:caret{key} {TYPE_LEAD + dur:.3f}s linear '
-                     f'{t - TYPE_LEAD:.3f}s forwards,caret-presence {dur + TYPE_TAIL:.3f}s '
+                     f'{t - TYPE_LEAD:.3f}s forwards,caret-presence {dur + INTRO_TAIL:.3f}s '
                      f'linear {t - TYPE_LEAD:.3f}s forwards"/>')
-        t = end + TYPE_TAIL
+        t = end + INTRO_TAIL
         iy += 40 if size > 24 else 28
 
-    # 2) Compact reading-order cascade, at the same beat as the typed commands.
+    # 2) Compact reading-order cascade, matching the faster intro beat.
     badge_svg = []
     badge_idx = 0
     badge_start = t - TYPE_LEAD
@@ -400,7 +402,7 @@ def render(theme, d, sha, today, badges):
         x = (W - total) / 2
         row_svg = []
         for kind, payload, bw, bh, color in row:
-            delay = badge_start + badge_idx * TYPE_BASE
+            delay = badge_start + badge_idx * TYPE_BASE / INTRO_SPEED
             badge_idx += 1
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
@@ -414,7 +416,7 @@ def render(theme, d, sha, today, badges):
         badge_svg.append("".join(row_svg))
 
     # 3) per-character typing, one gliding caret on screen at a time
-    command_start = badge_start + (badge_idx - 1) * TYPE_BASE + .14 + TYPE_LEAD
+    command_start = badge_start + (badge_idx - 1) * TYPE_BASE / INTRO_SPEED + .14 + TYPE_LEAD
     command_clips, session, caret_rules, out = typing_session(c, command_start)
     defs.extend(command_clips)
 

@@ -43,15 +43,18 @@ OUT = Path(__file__).resolve().parent.parent / "assets"
 W, H = 1160, 800
 X0 = 40
 ADV = 9.6  # monospace cell at 16px
-TYPE_BASE = 0.045  # steady pace between keystrokes, ~2.7 frames at 60 Hz
-TYPE_JITTER = 0.008  # ± variance, so the rhythm reads human, not metronomic
-WORD_BEAT = 0.04  # a breath after every space
-TYPE_LEAD = 0.16  # the caret waits at the prompt before the first key lands
-TYPE_TAIL = 0.30  # beat between one command and the next prompt
+PLAYBACK_SPEED = 2.0  # double all typing and handover speeds together
+TYPE_BASE = 0.045 / PLAYBACK_SPEED  # steady pace between keystrokes
+TYPE_JITTER = 0.008 / PLAYBACK_SPEED  # small human variation
+WORD_BEAT = 0.04 / PLAYBACK_SPEED  # a breath after every space
+TYPE_LEAD = 0.16 / PLAYBACK_SPEED  # caret lead-in before the first keystroke
+TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
-TYPE_START = 0.26  # first heading keystroke, after its caret appears
-INTRO_SPEED = 2.0  # faster banner, without changing command typing speed
-INTRO_TAIL = 0.20  # shorter handover between heading lines
+TYPE_START = 0.26 / PLAYBACK_SPEED  # first heading keystroke
+INTRO_SPEED = 2.0  # preserve the banner's faster pace relative to commands
+INTRO_TAIL = 0.20 / PLAYBACK_SPEED  # shorter handover between heading lines
+BADGE_FADE = 0.14 / PLAYBACK_SPEED
+HEADLINE_FADE = 0.04  # soften large glyph onsets over a few display frames
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -252,7 +255,7 @@ def typing_track(text, advances, start, key, rng, speed=1.0):
 
     Advances are explicit so a wide emoji is revealed in one complete cell,
     just like an ASCII letter. Speed scales glyph and caret timing together;
-    commands keep the original pace while the intro uses a faster rendition.
+    both sections follow PLAYBACK_SPEED, with a faster rendition for the intro.
     """
     lands, at = [], start
     for k, ch in enumerate(text):
@@ -280,7 +283,7 @@ def typing_track(text, advances, start, key, rng, speed=1.0):
     reveal.append('100%{transform:scaleX(1)}')
     rules = [f'@keyframes caret{key}{{{"".join(glide)}}}',
              f'@keyframes clip{key}{{{"".join(reveal)}}}']
-    return rules, dur, lands[-1]
+    return rules, dur, lands[-1], lands
 
 
 def typing_session(c, start):
@@ -305,7 +308,7 @@ def typing_session(c, start):
         n = len(cmd)
         width = n * ADV
         p = t - TYPE_LEAD  # prompt and caret appear here, typing starts at t
-        track_rules, dur, end = typing_track(cmd, [ADV] * n, t, i, rng)
+        track_rules, dur, end, _ = typing_track(cmd, [ADV] * n, t, i, rng)
         rules.extend(track_rules)
         span = TYPE_LEAD + dur  # caret timeline: prompt → last glyph lands
         clip_dur = dur + TYPE_HOLD
@@ -367,22 +370,29 @@ def render(theme, d, sha, today, badges):
         width = sum(advances)
         x = mid - width / 2
         key = f'intro{idx}'
-        track_rules, dur, end = typing_track(text, advances, t, key, intro_rng, INTRO_SPEED)
+        track_rules, dur, end, lands = typing_track(text, advances, t, key, intro_rng, INTRO_SPEED)
         intro_rules.extend(track_rules)
-        defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
-                    f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
-                    f'width="{width:.3f}" height="{size * 1.5:.3f}" '
-                    f'style="transform-origin:{x:.3f}px {iy - size}px;'
-                    f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/>'
-                    f'</clipPath>')
+        if idx:
+            defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
+                        f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
+                        f'width="{width:.3f}" height="{size * 1.5:.3f}" '
+                        f'style="transform-origin:{x:.3f}px {iy - size}px;'
+                        f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/>'
+                        f'</clipPath>')
         # Explicit cells prevent font fallback (especially emoji) from moving
         # glyph edges away from the shared clip and caret landing positions.
         glyphs, gx = [], x
-        for ch, advance in zip(text, advances):
+        for ch, advance, when in zip(text, advances, lands):
+            # Large bold letters make a hard cell reveal conspicuous. Blend
+            # each complete glyph around its shared landing time, without
+            # slicing letters/emoji or introducing separate movement.
+            onset = (f' class="headline-glyph" style="animation-delay:{when - HEADLINE_FADE / 2:.4f}s"'
+                     if idx == 0 else '')
             glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
-                          f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
+                          f'lengthAdjust="spacingAndGlyphs"{onset}>{esc(ch)}</tspan>')
             gx += advance
-        intro.append(f'<g clip-path="url(#ic{idx})">'
+        clip_attr = f' clip-path="url(#ic{idx})"' if idx else ''
+        intro.append(f'<g{clip_attr}>'
                      f'<text class="{cls}" y="{iy}" xml:space="preserve">'
                      f'{"".join(glyphs)}</text></g>')
         intro.append(f'<rect class="typing-caret" x="{x + 2:.3f}" y="{iy - size * .8:.3f}" '
@@ -416,7 +426,7 @@ def render(theme, d, sha, today, badges):
         badge_svg.append("".join(row_svg))
 
     # 3) per-character typing, one gliding caret on screen at a time
-    command_start = badge_start + (badge_idx - 1) * TYPE_BASE / INTRO_SPEED + .14 + TYPE_LEAD
+    command_start = badge_start + (badge_idx - 1) * TYPE_BASE / INTRO_SPEED + BADGE_FADE + TYPE_LEAD
     command_clips, session, caret_rules, out = typing_session(c, command_start)
     defs.extend(command_clips)
 
@@ -518,7 +528,8 @@ text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
 .i2{{font-size:19px;fill:{c["fg"]}}}
 .i3{{font-size:18px;fill:{c["muted"]}}}
-.badge{{animation:badge-in .14s cubic-bezier(.22,1,.36,1) both}}
+.headline-glyph{{animation:glyph-in {HEADLINE_FADE:.3f}s linear both}}
+.badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
 .kc{{font-size:16px;fill:{c["fg"]}}}
@@ -536,6 +547,7 @@ text{{font-family:{MONO}}}
 {"\n".join(caret_rules)}
 {"\n".join(intro_rules)}
 @keyframes badge-in{{from{{opacity:0}}to{{opacity:1}}}}
+@keyframes glyph-in{{from{{opacity:0}}to{{opacity:1}}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}

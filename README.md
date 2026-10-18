@@ -2,15 +2,15 @@
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="./assets/terminal-dark.svg"
+      srcset="./assets/terminal-dark.svg?v=3eb31978"
     />
     <source
       media="(prefers-color-scheme: light)"
-      srcset="./assets/terminal-light.svg"
+      srcset="./assets/terminal-light.svg?v=3eb31978"
     />
     <img
       width="100%"
-      src="./assets/terminal-dark.svg"
+      src="./assets/terminal-dark.svg?v=3eb31978"
       alt="tingfeng347 — animated terminal: intro slides left to reveal a 3D contribution preview, followed by a typing session, languages, stats and a looping contribution snake"
     />
   </picture>

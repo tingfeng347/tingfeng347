@@ -6,7 +6,8 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion is choreographed on one timeline: intro lines and commands share the
+Motion is choreographed on one timeline: the headline is static; subtitles and
+commands share the
 same per-character typing engine. Complete glyphs appear at each keystroke
 (lightly jittered, with a beat after every space) while the caret glides
 from cell to cell instead of snapping, handing over to the next prompt at the
@@ -50,9 +51,8 @@ WORD_BEAT = 0.04 / PLAYBACK_SPEED  # a breath after every space
 TYPE_LEAD = 0.16 / PLAYBACK_SPEED  # caret lead-in before the first keystroke
 TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
-TYPE_START = 0.26 / PLAYBACK_SPEED  # first heading keystroke
+TYPE_START = 0.26 / PLAYBACK_SPEED  # first subtitle keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
-HEADLINE_FADE = 0.04  # soften large glyph onsets over a few display frames
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -357,7 +357,7 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) Type one centred line at a time with the exact command-line engine.
+    # 1) Show the headline immediately; type subtitles with the command engine.
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
@@ -367,32 +367,30 @@ def render(theme, d, sha, today, badges):
                     for ch in text]
         width = sum(advances)
         x = mid - width / 2
-        key = f'intro{idx}'
-        track_rules, dur, end, lands = typing_track(text, advances, t, key, intro_rng)
-        intro_rules.extend(track_rules)
-        if idx:
-            defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
-                        f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
-                        f'width="{width:.3f}" height="{size * 1.5:.3f}" '
-                        f'style="transform-origin:{x:.3f}px {iy - size}px;'
-                        f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/>'
-                        f'</clipPath>')
         # Explicit cells prevent font fallback (especially emoji) from moving
         # glyph edges away from the shared clip and caret landing positions.
         glyphs, gx = [], x
-        for ch, advance, when in zip(text, advances, lands):
-            # Large bold letters make a hard cell reveal conspicuous. Blend
-            # each complete glyph around its shared landing time, without
-            # slicing letters/emoji or introducing separate movement.
-            onset = (f' class="headline-glyph" style="animation-delay:{when - HEADLINE_FADE / 2:.4f}s"'
-                     if idx == 0 else '')
+        for ch, advance in zip(text, advances):
             glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
-                          f'lengthAdjust="spacingAndGlyphs"{onset}>{esc(ch)}</tspan>')
+                          f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
             gx += advance
-        clip_attr = f' clip-path="url(#ic{idx})"' if idx else ''
-        intro.append(f'<g{clip_attr}>'
-                     f'<text class="{cls}" y="{iy}" xml:space="preserve">'
-                     f'{"".join(glyphs)}</text></g>')
+        line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
+                f'{"".join(glyphs)}</text>')
+        if idx == 0:
+            intro.append(line)
+            iy += 40
+            continue
+
+        key = f'intro{idx}'
+        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng)
+        intro_rules.extend(track_rules)
+        defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
+                    f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
+                    f'width="{width:.3f}" height="{size * 1.5:.3f}" '
+                    f'style="transform-origin:{x:.3f}px {iy - size}px;'
+                    f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/>'
+                    f'</clipPath>')
+        intro.append(f'<g clip-path="url(#ic{idx})">{line}</g>')
         intro.append(f'<rect class="typing-caret" x="{x + 2:.3f}" y="{iy - size * .8:.3f}" '
                      f'width="2" height="{size * 1.05:.3f}" rx="1" fill="{c["fg"]}" '
                      f'style="animation:caret{key} {TYPE_LEAD + dur:.3f}s linear '
@@ -526,7 +524,6 @@ text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
 .i2{{font-size:19px;fill:{c["fg"]}}}
 .i3{{font-size:18px;fill:{c["muted"]}}}
-.headline-glyph{{animation:glyph-in {HEADLINE_FADE:.3f}s linear both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
@@ -545,7 +542,6 @@ text{{font-family:{MONO}}}
 {"\n".join(caret_rules)}
 {"\n".join(intro_rules)}
 @keyframes badge-in{{from{{opacity:0}}to{{opacity:1}}}}
-@keyframes glyph-in{{from{{opacity:0}}to{{opacity:1}}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}

@@ -6,8 +6,9 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion is choreographed on one timeline: the intro lines and every badge rise in
-on a single expo-out curve, then each command is typed on its own per-character
+Motion is choreographed on one timeline: the intro lines reveal left to right
+on a gliding per-character timeline and badges follow in reading order, then
+each command is typed on its own per-character
 timing (lightly jittered, with a beat after every space) while its caret glides
 from cell to cell instead of snapping, handing over to the next prompt at the
 exact moment that prompt appears. The language bar and heatmap each use a single
@@ -47,8 +48,8 @@ TYPE_JITTER = 0.008  # ± variance, so the rhythm reads human, not metronomic
 WORD_BEAT = 0.04  # a breath after every space
 TYPE_LEAD = 0.16  # the caret waits at the prompt before the first key lands
 TYPE_TAIL = 0.30  # beat between one command and the next prompt
-TYPE_START = 1.30  # first prompt, as the badge cascade settles
-RNG = random.Random(20261018)  # characters jitter the same way every run
+TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
+TYPE_START = 2.15  # first prompt, as the badge cascade settles
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -259,6 +260,7 @@ def typing_session(c):
     prompt_w = len(prompt) * ADV
     cmd_x = X0 + prompt_w
     clips, session, rules = [], [], []
+    rng = random.Random(20261018)  # identical timing across themes and renders
     t = TYPE_START
     for i, cmd in enumerate(COMMANDS):
         ly = 252 + i * 26
@@ -268,7 +270,7 @@ def typing_session(c):
         lands, at = [], t
         for k, ch in enumerate(cmd):
             if k:
-                at += TYPE_BASE + RNG.uniform(-TYPE_JITTER, TYPE_JITTER)
+                at += TYPE_BASE + rng.uniform(-TYPE_JITTER, TYPE_JITTER)
                 if ch == " " or cmd[k - 1] == " ":
                     at += WORD_BEAT
             lands.append(at)
@@ -282,9 +284,13 @@ def typing_session(c):
                          f'{{transform:translateX({(k + 1) * ADV:.1f}px)}}')
         rules.append(f'@keyframes caret{i}{{{"".join(glide)}}}')
 
+        # SVGs loaded as <img> can retain the penultimate stepped clip at the
+        # animation endpoint. Land the full width inside the active interval,
+        # then hold it for several frames; caret timing stays unchanged.
+        clip_dur = dur + TYPE_HOLD
         reveal = []
-        for k, when in enumerate(lands[:-1]):
-            reveal.append(f'{(when - t) / dur * 100:.4f}%'
+        for k, when in enumerate(lands):
+            reveal.append(f'{(when - t) / clip_dur * 100:.4f}%'
                           f'{{transform:scaleX({(k + 1) / n:.5f});'
                           f'animation-timing-function:steps(1,end)}}')
         reveal.append('100%{transform:scaleX(1)}')
@@ -294,7 +300,7 @@ def typing_session(c):
             f'<clipPath id="cc{i}" clipPathUnits="userSpaceOnUse">'
             f'<rect class="cc" x="{cmd_x:.1f}" y="{ly - 16}" width="{width:.1f}" height="24" '
             f'style="transform-origin:{cmd_x:.1f}px {ly - 16:.1f}px;'
-            f'animation:clip{i} {dur:.3f}s linear {t:.3f}s forwards"/></clipPath>')
+            f'animation:clip{i} {clip_dur:.3f}s linear {t:.3f}s forwards"/></clipPath>')
         session.append(
             f'<text class="pr" x="{X0}" y="{ly}" xml:space="preserve" '
             f'textLength="{prompt_w:.1f}" lengthAdjust="spacingAndGlyphs" '
@@ -336,21 +342,44 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) centred intro banner: one expo-out rise per line, 0.11s apart
+    # 1) Same gliding rhythm as the caret, applied to each complete text run.
+    # Keep emoji, kerning and centred layout intact instead of splitting spans.
     intro, iy = [], 46
+    intro_rules = []
+    intro_rng = random.Random(20261018)
     for idx, (text, size, cls) in enumerate(INTRO):
-        intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle" '
-                     f'style="animation-delay:{0.06 + idx * 0.11:.3f}s">{esc(text)}</text>')
+        lands, at = [0.0], 0.0
+        for ch in text:
+            at += TYPE_BASE + intro_rng.uniform(-TYPE_JITTER, TYPE_JITTER)
+            if ch == " ":
+                at += WORD_BEAT
+            lands.append(at)
+        duration = 0.90 + idx * 0.12
+        active = duration / (duration + TYPE_HOLD)
+        frames = [f'{when / at * active * 100:.4f}%'
+                  f'{{transform:scaleX({k / len(text):.5f})}}'
+                  for k, when in enumerate(lands)]
+        frames.append('100%{transform:scaleX(1)}')
+        intro_rules.append(f'@keyframes intro{idx}{{{"".join(frames)}}}')
+        defs.append(f'<clipPath id="ic{idx}" clipPathUnits="objectBoundingBox">'
+                    f'<rect class="intro-clip" x="0" y="-.2" width="1" height="1.4" '
+                    f'style="animation:intro{idx} {duration + TYPE_HOLD:.3f}s linear '
+                    f'{0.06 + idx * 0.32:.3f}s both"/></clipPath>')
+        intro.append(f'<g clip-path="url(#ic{idx})">'
+                     f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle">'
+                     f'{esc(text)}</text></g>')
         iy += 40 if size > 24 else 28
 
-    # 2) badges cascade left→right across the three rows, settling by ~1.3s
+    # 2) Compact reading-order cascade, at the same beat as the typed commands.
     badge_svg = []
+    badge_idx = 0
     for r, row in enumerate(badges):
         total = sum(w for _, _, w, _, _ in row) + 8 * (len(row) - 1)
         x = (W - total) / 2
         row_svg = []
-        for k, (kind, payload, bw, bh, color) in enumerate(row):
-            delay = 0.30 + r * 0.10 + k * 0.034
+        for kind, payload, bw, bh, color in row:
+            delay = 1.04 + badge_idx * TYPE_BASE
+            badge_idx += 1
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
             else:
@@ -464,8 +493,8 @@ text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
 .i2{{font-size:19px;fill:{c["fg"]}}}
 .i3{{font-size:18px;fill:{c["muted"]}}}
-.i1,.i2,.i3{{opacity:0;animation:enter .85s cubic-bezier(.16,1,.3,1) both}}
-.badge{{opacity:0;animation:badge-in .58s cubic-bezier(.16,1,.3,1) both}}
+.intro-clip{{transform-origin:0 0}}
+.badge{{animation:badge-in .24s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc{{font-kerning:none;font-variant-ligatures:none}}
 .kc{{font-size:16px;fill:{c["fg"]}}}
@@ -481,8 +510,8 @@ text{{font-family:{MONO}}}
 .cap{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
 .ft{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
 {"\n".join(caret_rules)}
-@keyframes enter{{from{{opacity:0;transform:translateY(13px)}}to{{opacity:1;transform:translateY(0)}}}}
-@keyframes badge-in{{from{{opacity:0;transform:translateY(9px)}}to{{opacity:1;transform:translateY(0)}}}}
+{"\n".join(intro_rules)}
+@keyframes badge-in{{from{{opacity:0;transform:translateX(-4px)}}to{{opacity:1;transform:translateX(0)}}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
@@ -490,7 +519,7 @@ text{{font-family:{MONO}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
 .pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft,.i1,.i2,.i3,.badge{{opacity:1}}
-.cc{{transform:none!important}}.typing-caret{{display:none}}}}
+.cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
 {"".join(intro)}

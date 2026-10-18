@@ -6,8 +6,9 @@ self-typing coding session (ending on `neofetch`), then the neofetch output — 
 language bar, five headline numbers and a yearly contribution heatmap — all
 driven by real GitHub data.
 
-Motion stays small: each command uses one character-stepped clip and a synced
-caret; the language bar and heatmap each use a single continuous clip reveal.
+Motion stays small: the intro and three badge rows enter as four calm groups;
+each command uses one character-stepped clip and a synced caret. The language
+bar and heatmap each use a single continuous clip reveal.
 All motion uses CSS, so reduced-motion readers see the complete static plate.
 
 One self-contained SVG per colour scheme. shields.io badges are fetched once and
@@ -286,30 +287,30 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) centred intro banner
+    # 1) centred intro banner, moving together so its text stays aligned
     intro, iy = [], 46
-    for idx, (text, size, cls) in enumerate(INTRO):
-        intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" text-anchor="middle" '
-                     f'style="animation-delay:{0.1 + idx * 0.16:.2f}s">{esc(text)}</text>')
+    for text, size, cls in INTRO:
+        intro.append(f'<text class="{cls}" x="{mid}" y="{iy}" '
+                     f'text-anchor="middle">{esc(text)}</text>')
         iy += 40 if size > 24 else 28
 
-    # 2) tech-stack badges, centred rows, staggered in on a springy rise
+    # 2) three closely staggered rows, settled before the first prompt at 0.98s
     badge_svg = []
     for r, row in enumerate(badges):
         total = sum(w for _, _, w, _, _ in row) + 8 * (len(row) - 1)
         x = (W - total) / 2
-        for i, (kind, payload, bw, bh, color) in enumerate(row):
-            delay = 0.5 + r * 0.3 + i * 0.06
+        row_svg = []
+        for kind, payload, bw, bh, color in row:
             if kind == "img":
                 inner = f'<image href="{payload}" width="{bw:.0f}" height="{bh:.0f}"/>'
             else:
                 inner = (f'<rect width="{bw:.0f}" height="{bh:.0f}" rx="3" fill="#{color}"/>'
                          f'<text x="{bw / 2:.0f}" y="13.5" text-anchor="middle" font-size="11" '
                          f'font-family="{MONO}" fill="#fff">{esc(payload)}</text>')
-            badge_svg.append(
-                f'<g transform="translate({x:.1f},{146 + r * 26})">'
-                f'<g class="bdg" style="animation-delay:{delay:.2f}s">{inner}</g></g>')
+            row_svg.append(f'<g transform="translate({x:.1f},{146 + r * 26})">{inner}</g>')
             x += bw + 8
+        badge_svg.append(f'<g class="badge-row" style="animation-delay:{0.2 + r * 0.08:.2f}s">'
+                         f'{"".join(row_svg)}</g>')
 
     # 3) character-aligned typing with one active caret at a time
     command_clips, session, out = typing_session(c)
@@ -410,10 +411,11 @@ def render(theme, d, sha, today, badges):
 <title id="t">{LOGIN} — terminal dashboard</title>
 <style>
 text{{font-family:{MONO}}}
-.i1{{font-size:34px;font-weight:700;fill:{c["fg"]};opacity:0;animation:rise .6s cubic-bezier(.2,.9,.25,1.15) both}}
-.i2{{font-size:19px;fill:{c["fg"]};opacity:0;animation:rise .6s cubic-bezier(.2,.9,.25,1.15) both}}
-.i3{{font-size:18px;fill:{c["muted"]};opacity:0;animation:rise .6s cubic-bezier(.2,.9,.25,1.15) both}}
-.bdg{{opacity:0;animation:spring .5s cubic-bezier(.34,1.56,.64,1) both}}
+.i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
+.i2{{font-size:19px;fill:{c["fg"]}}}
+.i3{{font-size:18px;fill:{c["muted"]}}}
+.intro,.badge-row{{animation:header-enter .56s cubic-bezier(.22,1,.36,1) both}}
+.intro{{animation-duration:.72s;animation-delay:.04s}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .12s ease-out both}}
 .pr,.kc{{font-kerning:none;font-variant-ligatures:none}}
 .kc{{font-size:16px;fill:{c["fg"]}}}
@@ -429,15 +431,15 @@ text{{font-family:{MONO}}}
 .ft{{font-size:13px;fill:{c["muted"]};opacity:0;animation:fade .5s ease-out both}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(10px)}}to{{opacity:1;transform:translateY(0)}}}}
-@keyframes spring{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes header-enter{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
 @keyframes caret-move{{from{{transform:translateX(0)}}to{{transform:translateX(var(--travel))}}}}
 @keyframes caret-presence{{from{{opacity:1}}to{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
-@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.i1,.i2,.i3,.bdg,.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft{{opacity:1}}.typing-caret{{display:none}}}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.pr,.blink,.host,.since,.lg,.num,.nl,.mo,.cap,.ft{{opacity:1}}.typing-caret{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
-{"".join(intro)}
+<g class="intro">{"".join(intro)}</g>
 {"".join(badge_svg)}
 {session}
 {head}

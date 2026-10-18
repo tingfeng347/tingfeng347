@@ -53,6 +53,7 @@ TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26 / PLAYBACK_SPEED  # first subtitle keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
+SUBTITLE_SIZE = 18
 MONO = "ui-monospace,'SFMono-Regular','JetBrains Mono',Menlo,Consolas,'DejaVu Sans Mono',monospace"
 
 THEMES = {
@@ -74,8 +75,8 @@ LANG_COLORS = ["#3b82f6", "#f97316", "#22c55e", "#eab308", "#a855f7", "#ec4899"]
 
 INTRO = [
     ("Hi There 👋, I'm tingfeng347", 34, "i1"),
-    ("🎯 Focused · Full-Stack & AI Agent Developer", 19, "i2"),
-    ("Building Coding Agents · Open Source · Knowledge Graphs", 18, "i3"),
+    ("🎯 Focused · Full-Stack & AI Agent Developer", SUBTITLE_SIZE, "i2"),
+    ("Building Coding Agents · Open Source · Knowledge Graphs", SUBTITLE_SIZE, "i3"),
 ]
 
 # tech-stack badges: (url_label, hex, logo, logoColor)
@@ -248,13 +249,8 @@ def wipe(cid, x, y, w, h, begin, dur):
             f'</clipPath>')
 
 
-def typing_track(text, advances, start, key, rng):
-    """Shared glyph landing times, stepped reveal and continuously moving caret.
-
-    Advances are explicit so a wide emoji is revealed in one complete cell,
-    just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
-    keystroke intervals and word pauses, regardless of their font size.
-    """
+def keystroke_times(text, start, rng):
+    """Build the terminal's lightly varied character landing times."""
     lands, at = [], start
     for k, ch in enumerate(text):
         if k:
@@ -262,6 +258,22 @@ def typing_track(text, advances, start, key, rng):
             if ch == " " or text[k - 1] == " ":
                 at += WORD_BEAT
         lands.append(at)
+    return lands
+
+
+def typing_track(text, advances, start, key, rng, cadence=None):
+    """Shared glyph landing times, stepped reveal and continuously moving caret.
+
+    Advances are explicit so a wide emoji is revealed in one complete cell,
+    just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
+    keystroke intervals and word pauses, regardless of their font size.
+    """
+    if cadence is None:
+        lands = keystroke_times(text, start, rng)
+    else:
+        if len(cadence) < len(text):
+            raise ValueError("The reference cadence must cover the entire typed line")
+        lands = [start + offset for offset in cadence[:len(text)]]
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
     clip_dur = dur + TYPE_HOLD
@@ -361,6 +373,11 @@ def render(theme, d, sha, today, badges):
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
+    # Use the existing Building… rhythm as the reference for both subtitles.
+    # Advance the RNG past the original Focused… run so the reference line's
+    # accepted rhythm stays unchanged, rather than generating a new pattern.
+    keystroke_times(INTRO[1][0], 0, intro_rng)
+    subtitle_cadence = keystroke_times(INTRO[2][0], 0, intro_rng)
     t = TYPE_START
     for idx, (text, size, cls) in enumerate(INTRO):
         advances = [size * (1.25 if unicodedata.east_asian_width(ch) in "WF" else .6)
@@ -382,7 +399,7 @@ def render(theme, d, sha, today, badges):
             continue
 
         key = f'intro{idx}'
-        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng)
+        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng, subtitle_cadence)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '
@@ -522,8 +539,9 @@ def render(theme, d, sha, today, badges):
 <style>
 text{{font-family:{MONO}}}
 .i1{{font-size:34px;font-weight:700;fill:{c["fg"]}}}
-.i2{{font-size:19px;fill:{c["fg"]}}}
-.i3{{font-size:18px;fill:{c["muted"]}}}
+.i2,.i3{{font-size:{SUBTITLE_SIZE}px}}
+.i2{{fill:{c["fg"]}}}
+.i3{{fill:{c["muted"]}}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}

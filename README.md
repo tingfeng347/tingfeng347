@@ -11,7 +11,7 @@
     <img
       width="100%"
       src="./assets/terminal-dark.svg"
-      alt="tingfeng347 — animated terminal: intro, a typing session, languages, contribution stats and a looping contribution snake"
+      alt="tingfeng347 — animated terminal: intro slides left to reveal a 3D contribution preview, followed by a typing session, languages, stats and a looping contribution snake"
     />
   </picture>
 </p>

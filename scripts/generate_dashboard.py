@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Render tingfeng347's profile as an animated, frameless terminal.
 
-Layout, animated on load: a centred intro banner, the tech-stack badges, a short
-self-typing coding session (ending on `neofetch`), then the neofetch output — a
+Layout, animated on load: a centred intro banner and tech-stack badges dock left
+to reveal a 3D contribution preview, followed by a short self-typing coding
+session (ending on `neofetch`), then the neofetch output — a
 language bar, five headline numbers and an animated contribution snake — all
 driven by real GitHub data.
 
@@ -17,6 +18,8 @@ One self-contained SVG per colour scheme. shields.io badges are fetched once and
 inlined as data URIs (with a flat-chip fallback). Snake SVGs are refreshed from
 the existing output branch and inlined with isolated CSS; committed copies
 provide an offline fallback. No external resources are needed at render time.
+The 3D preview embeds the locally generated chart with its final geometry;
+the full-size README chart remains available for inspecting the details.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -53,6 +56,8 @@ TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26 / PLAYBACK_SPEED  # first headline keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
+INTRO_SHIFT = 220
+INTRO_DOCK_DURATION = 0.65
 SUBTITLE_SIZE = 18
 SVG_NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", SVG_NS)
@@ -420,6 +425,33 @@ def typing_session(c, start):
 
 # ── plate ─────────────────────────────────────────────────────────────
 
+def contribution_preview(theme, begin):
+    """Embed the generated 3D chart as an isolated, offline-safe SVG image.
+
+    A separate SVG image document keeps the chart's universal font rule and
+    class names away from the terminal's typing styles.
+    """
+    filename = "profile-night-view.svg" if theme == "dark" else "profile-season.svg"
+    source = OUT.parent / "profile-3d-contrib" / filename
+    chart = ET.fromstring(source.read_bytes())
+    # Animated SVGs used inside another SVG image may freeze at their first
+    # SMIL frame (flat columns, invisible language pie). The generator already
+    # writes final values on the base elements, so retain those and remove only
+    # the inner animation. Our outer CSS owns the single preview entrance.
+    for node in chart.iter():
+        for child in list(node):
+            if child.tag in {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}:
+                node.remove(child)
+    encoded = base64.b64encode(ET.tostring(chart, encoding="utf-8")).decode("ascii")
+    return (
+        f'<g class="contrib-preview" style="animation-delay:{begin:.3f}s">'
+        f'<text class="contrib-title" x="920" y="19" text-anchor="middle">3D Contributions</text>'
+        f'<image class="contrib-image" x="720" y="30" width="400" height="265.625" '
+        f'preserveAspectRatio="xMidYMid meet" href="data:image/svg+xml;base64,{encoded}"/>'
+        f'</g>'
+    )
+
+
 def render(theme, d, sha, today, badges):
     c = THEMES[theme]
     mid = W / 2
@@ -526,8 +558,13 @@ def render(theme, d, sha, today, badges):
                            f'caret-presence {duration:.3f}s linear {row_start:.3f}s forwards"/>')
         badge_svg.append("".join(row_svg))
 
-    # 3) per-character typing, one gliding caret on screen at a time
-    command_start = badge_start + badge_idx * BADGE_FADE + TYPE_LEAD
+    # Finish every badge before docking the unchanged intro on the left.
+    # The chart enters the vacated space once the intro has started moving.
+    dock_start = badge_start + badge_idx * BADGE_FADE + 0.12
+    preview = contribution_preview(theme, dock_start + 0.16)
+
+    # 3) Resume terminal typing after the single layout transition settles.
+    command_start = dock_start + INTRO_DOCK_DURATION + TYPE_LEAD
     command_clips, session, caret_rules, out = typing_session(c, command_start)
     defs.extend(command_clips)
 
@@ -605,6 +642,9 @@ text{{font-family:{MONO}}}
 .i3{{fill:{c["muted"]}}}
 .subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .snake-panel{{opacity:0;animation:fade .45s ease-out both}}
+.intro-layout{{transform:translateX(-{INTRO_SHIFT}px);animation:intro-dock {INTRO_DOCK_DURATION}s cubic-bezier(.22,1,.36,1) {dock_start:.3f}s both}}
+.contrib-preview{{opacity:1;animation:contrib-enter .49s cubic-bezier(.22,1,.36,1) both}}
+.contrib-title{{font-size:16px;font-weight:600;fill:{c["fg"]}}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
@@ -622,6 +662,8 @@ text{{font-family:{MONO}}}
 {"\n".join(caret_rules)}
 {"\n".join(intro_rules)}
 @keyframes badge-in{{from{{opacity:0}}to{{opacity:1}}}}
+@keyframes intro-dock{{from{{transform:translateX(0)}}to{{transform:translateX(-{INTRO_SHIFT}px)}}}}
+@keyframes contrib-enter{{from{{opacity:0;transform:translateX(18px)}}to{{opacity:1;transform:translateX(0)}}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
@@ -633,8 +675,11 @@ text{{font-family:{MONO}}}
 .snake-art .snk-s,.snake-art .snk-u{{display:none}}}}
 </style>
 <defs>{"".join(defs)}</defs>
+<g class="intro-layout">
 {"".join(intro)}
 {"".join(badge_svg)}
+</g>
+{preview}
 {session}
 {head}
 {langs_svg}

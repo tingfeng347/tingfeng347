@@ -18,8 +18,8 @@ One self-contained SVG per colour scheme. shields.io badges are fetched once and
 inlined as data URIs (with a flat-chip fallback). Snake SVGs are refreshed from
 the existing output branch and inlined with isolated CSS; committed copies
 provide an offline fallback. No external resources are needed at render time.
-The 3D preview embeds the locally generated chart with its final geometry;
-the full-size README chart remains available for inspecting the details.
+The 3D chart embeds the locally generated final geometry on a transparent
+background, so it shares the terminal's surface.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -56,7 +56,7 @@ TYPE_TAIL = 0.30 / PLAYBACK_SPEED  # beat between commands
 TYPE_HOLD = 0.08  # paint the last glyph before an embedded SVG's animation ends
 TYPE_START = 0.26 / PLAYBACK_SPEED  # first headline keystroke
 BADGE_FADE = 0.14 / PLAYBACK_SPEED
-INTRO_SHIFT = 220
+INTRO_SHIFT = 240
 INTRO_DOCK_DURATION = 0.65
 SUBTITLE_SIZE = 18
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -434,6 +434,14 @@ def contribution_preview(theme, begin):
     filename = "profile-night-view.svg" if theme == "dark" else "profile-season.svg"
     source = OUT.parent / "profile-3d-contrib" / filename
     chart = ET.fromstring(source.read_bytes())
+    # Remove the opaque canvas, preserving the chart's actual shapes. Donut
+    # holes remain transparent and separator strokes match the README surface.
+    for child in list(chart):
+        if child.tag == f"{{{SVG_NS}}}rect" and "fill-bg" in child.get("class", "").split():
+            chart.remove(child)
+    surface = "#0d1117" if theme == "dark" else "#ffffff"
+    style = chart.find(f"{{{SVG_NS}}}style")
+    style.text += f"\n.stroke-bg {{ stroke: {surface}; }}"
     # Animated SVGs used inside another SVG image may freeze at their first
     # SMIL frame (flat columns, invisible language pie). The generator already
     # writes final values on the base elements, so retain those and remove only
@@ -445,8 +453,7 @@ def contribution_preview(theme, begin):
     encoded = base64.b64encode(ET.tostring(chart, encoding="utf-8")).decode("ascii")
     return (
         f'<g class="contrib-preview" style="animation-delay:{begin:.3f}s">'
-        f'<text class="contrib-title" x="920" y="19" text-anchor="middle">3D Contributions</text>'
-        f'<image class="contrib-image" x="720" y="30" width="400" height="265.625" '
+        f'<image class="contrib-image" x="660" y="0" width="480" height="318.75" '
         f'preserveAspectRatio="xMidYMid meet" href="data:image/svg+xml;base64,{encoded}"/>'
         f'</g>'
     )
@@ -561,7 +568,7 @@ def render(theme, d, sha, today, badges):
     # Finish every badge before docking the unchanged intro on the left.
     # The chart enters the vacated space once the intro has started moving.
     dock_start = badge_start + badge_idx * BADGE_FADE + 0.12
-    preview = contribution_preview(theme, dock_start + 0.16)
+    preview = contribution_preview(theme, dock_start + 0.22)
 
     # 3) Resume terminal typing after the single layout transition settles.
     command_start = dock_start + INTRO_DOCK_DURATION + TYPE_LEAD
@@ -643,8 +650,7 @@ text{{font-family:{MONO}}}
 .subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .snake-panel{{opacity:0;animation:fade .45s ease-out both}}
 .intro-layout{{transform:translateX(-{INTRO_SHIFT}px);animation:intro-dock {INTRO_DOCK_DURATION}s cubic-bezier(.22,1,.36,1) {dock_start:.3f}s both}}
-.contrib-preview{{opacity:1;animation:contrib-enter .49s cubic-bezier(.22,1,.36,1) both}}
-.contrib-title{{font-size:16px;font-weight:600;fill:{c["fg"]}}}
+.contrib-preview{{opacity:1;animation:contrib-enter .43s cubic-bezier(.22,1,.36,1) both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}

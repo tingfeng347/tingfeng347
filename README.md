@@ -2,15 +2,15 @@
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="./assets/terminal-dark.svg?v=3eb31978"
+      srcset="./assets/terminal-dark.svg?v=3d-blended-v2"
     />
     <source
       media="(prefers-color-scheme: light)"
-      srcset="./assets/terminal-light.svg?v=3eb31978"
+      srcset="./assets/terminal-light.svg?v=3d-blended-v2"
     />
     <img
       width="100%"
-      src="./assets/terminal-dark.svg?v=3eb31978"
+      src="./assets/terminal-dark.svg?v=3d-blended-v2"
       alt="tingfeng347 — animated terminal: intro slides left to reveal a 3D contribution preview, followed by a typing session, languages, stats and a looping contribution snake"
     />
   </picture>
@@ -70,29 +70,6 @@ Mac                      1 hr 25 mins        ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀�
 <!--END_SECTION:waka-->
 
 <br/>
-
-<h2 align="center">3D Contributions</h2>
-
-<p align="center">
-  <picture>
-    <!-- 3D_DARK_THEME -->
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-night-view.svg"
-    />
-    <!-- 3D_LIGHT_THEME -->
-    <source
-      media="(prefers-color-scheme: light)"
-      srcset="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
-    />
-    <!-- 3D_FALLBACK_THEME -->
-    <img
-      width="100%"
-      src="https://raw.githubusercontent.com/tingfeng347/tingfeng347/main/profile-3d-contrib/profile-season.svg"
-      alt="3D contribution graph"
-    />
-  </picture>
-</p>
 
 <p align="center">
   <img

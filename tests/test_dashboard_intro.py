@@ -24,17 +24,21 @@ class IntroDockTests(unittest.TestCase):
                 self.assertEqual(prefix, 'data:image/svg+xml;base64')
                 chart = ET.fromstring(base64.b64decode(encoded))
                 original = ET.parse(dashboard.OUT.parent / 'profile-3d-contrib' / filename).getroot()
-                # All original final geometry, text and styles survive, but no
-                # nested SMIL can freeze the preview on its incomplete frame.
+                # Preserve final chart geometry and labels while removing the
+                # opaque canvas and SMIL's incomplete opening frame.
                 animated = {f'{{{dashboard.SVG_NS}}}animate',
                             f'{{{dashboard.SVG_NS}}}animateTransform'}
                 self.assertFalse(any(n.tag in animated for n in chart.iter()))
                 geometry = lambda tree: [(n.tag, n.attrib, (n.text or '').strip())
-                                         for n in tree.iter() if n.tag not in animated]
+                                         for n in tree.iter() if n.tag not in animated
+                                         and n.tag != f'{{{dashboard.SVG_NS}}}style'
+                                         and 'fill-bg' not in n.get('class', '').split()]
                 self.assertEqual(geometry(chart), geometry(original))
+                self.assertFalse(chart.findall('s:rect[@class="fill-bg"]', ns))
+                self.assertFalse(group.findall('s:text', ns))
                 self.assertFalse(group.findall('.//s:style', ns))
                 self.assertLessEqual(float(image.get('x')) + float(image.get('width')),
-                                     dashboard.W - dashboard.X0)
+                                     dashboard.W - 20)
 
     def test_intro_docks_only_after_badges_then_terminal_starts(self):
         data = dict(top_starred=[], since='2023', languages=[], contributions=0,
@@ -56,9 +60,9 @@ class IntroDockTests(unittest.TestCase):
         first_command = root.find('.//s:clipPath[@id="cc0"]/s:rect', ns)
         command_start = float(re.search(r'linear ([\d.]+)s', first_command.get('style'))[1])
         self.assertGreaterEqual(command_start, dock + dashboard.INTRO_DOCK_DURATION)
-        self.assertIn('from{transform:translateX(0)}to{transform:translateX(-220px)}', css)
+        self.assertIn('from{transform:translateX(0)}to{transform:translateX(-240px)}', css)
         # With animations disabled the base styles retain the final two-column view.
-        self.assertIn('.intro-layout{transform:translateX(-220px)', css)
+        self.assertIn('.intro-layout{transform:translateX(-240px)', css)
         self.assertIn('.contrib-preview{opacity:1;', css)
         self.assertIn('@media (prefers-reduced-motion:reduce)', css)
 

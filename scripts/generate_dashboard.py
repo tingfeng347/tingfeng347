@@ -335,12 +335,12 @@ def keystroke_times(text, start, rng):
     return lands
 
 
-def typing_track(text, advances, start, key, rng, steady=False):
-    """Shared glyph landing times, stepped reveal and continuously moving caret.
+def typing_track(text, advances, start, key, rng, steady=False, smooth=False):
+    """Share a timeline between the reveal and caret.
 
-    Advances are explicit so a wide emoji is revealed in one complete cell,
-    just like an ASCII letter. All sections use the same PLAYBACK_SPEED,
-    keystroke intervals and word pauses, regardless of their font size.
+    Terminal lines land complete glyphs with word pauses. The large opening
+    lines use a continuous sweep so wide cells cannot create visible jumps.
+    Both modes retain the same duration and handover to the following line.
     """
     lands = ([start + k * TYPE_BASE for k in range(len(text))]
              if steady else keystroke_times(text, start, rng))
@@ -348,6 +348,17 @@ def typing_track(text, advances, start, key, rng, steady=False):
     span = TYPE_LEAD + dur
     clip_dur = dur + TYPE_HOLD
     width = sum(advances)
+    if smooth:
+        # A continuous sweep avoids whole-cell jumps in the large headline.
+        # Clip time starts at typing; caret time includes the prompt lead-in.
+        reveal = (f'0%{{transform:scaleX(0)}}'
+                  f'{dur / clip_dur * 100:.4f}%{{transform:scaleX(1)}}'
+                  f'100%{{transform:scaleX(1)}}')
+        glide = (f'0%{{transform:translateX(0)}}'
+                 f'{TYPE_LEAD / span * 100:.4f}%{{transform:translateX(0)}}'
+                 f'100%{{transform:translateX({width:.3f}px)}}')
+        return [f'@keyframes caret{key}{{{glide}}}',
+                f'@keyframes clip{key}{{{reveal}}}'], dur, lands[-1], lands
     glide = ['0%{transform:translateX(0)}',
              f'{TYPE_LEAD * 0.55 / span * 100:.4f}%{{transform:translateX(0)}}']
     reveal, edge = [], 0.0
@@ -475,7 +486,7 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) Type the headline without pauses, then retain the subtitle rhythm.
+    # 1) Sweep the first two lines continuously; retain the third line rhythm.
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
@@ -501,7 +512,8 @@ def render(theme, d, sha, today, badges):
         else:
             line = intro_text(text, advances, x, iy, cls)
         key = f'intro{idx}'
-        track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng, steady=idx == 0)
+        track_rules, dur, end, _ = typing_track(
+            text, advances, t, key, intro_rng, steady=idx == 0, smooth=idx < 2)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '

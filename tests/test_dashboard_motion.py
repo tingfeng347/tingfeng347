@@ -18,6 +18,38 @@ with patch.object(sys, "argv", [str(generator)]):
 
 
 class TypingMotionTests(unittest.TestCase):
+    def test_opening_sweeps_without_steps_and_caret_stays_aligned(self):
+        data = dict(top_starred=[], since="2023", languages=[], contributions=0,
+                    commits=0, repos=0, prs=0, stars=0, weeks=[], active_days=0)
+        ns = {"s": dashboard.SVG_NS}
+        for theme in dashboard.THEMES:
+            sources = [dashboard.render(theme, data, "test", dt.date(2026, 10, 18), []),
+                       (dashboard.OUT / f"terminal-{theme}.svg").read_text()]
+            for source in sources:
+                root = ET.fromstring(source)
+                css = root.find("s:style", ns).text
+                for index in (0, 1):
+                    with self.subTest(theme=theme, line=index):
+                        clip = root.find(f'.//s:clipPath[@id="ic{index}"]/s:rect', ns)
+                        clip_rule = next(line for line in css.splitlines()
+                                         if line.startswith(f"@keyframes clipintro{index}{{"))
+                        caret_rule = next(line for line in css.splitlines()
+                                          if line.startswith(f"@keyframes caretintro{index}{{"))
+                        self.assertNotIn("steps(", clip_rule)
+                        self.assertIn("0%{transform:scaleX(0)}", clip_rule)
+                        self.assertIn("s linear ", clip.get("style"))
+                        # The full-width frame must paint before animation end.
+                        finish = float(re.search(r"([\d.]+)%\{transform:scaleX\(1\)", clip_rule)[1]) / 100
+                        duration = float(re.search(r"animation:\w+ ([\d.]+)s", clip.get("style"))[1])
+                        typing_duration = finish * duration
+                        self.assertAlmostEqual(duration - typing_duration, dashboard.TYPE_HOLD, delta=.001)
+                        # The caret covers exactly the clip width in the same interval.
+                        caret_width = float(re.search(r"100%\{transform:translateX\(([\d.]+)px", caret_rule)[1])
+                        self.assertAlmostEqual(caret_width, float(clip.get("width")), places=3)
+                        caret_span = dashboard.TYPE_LEAD + typing_duration
+                        lead = float(re.search(r"([\d.]+)%\{transform:translateX\(0\)\}100%", caret_rule)[1]) / 100
+                        self.assertAlmostEqual(lead * caret_span, dashboard.TYPE_LEAD, delta=.001)
+
     def test_rendered_words_do_not_inherit_another_sentences_pauses(self):
         data = dict(top_starred=[], since="2023", languages=[], contributions=0,
                     commits=0, repos=0, prs=0, stars=0, weeks=[], active_days=0)
@@ -26,7 +58,7 @@ class TypingMotionTests(unittest.TestCase):
             svg = dashboard.render(theme, data, "test", dt.date(2026, 10, 18), [])
             root = ET.fromstring(svg)
             css = root.find("s:style", ns).text
-            for text_class, clip_id in (("i1", "ic0"), ("i2", "ic1"), ("i3", "ic2"), ("kc", "cc0")):
+            for text_class, clip_id in (("i3", "ic2"), ("kc", "cc0")):
                 with self.subTest(theme=theme, line=text_class):
                     text = "".join(root.find(f'.//s:text[@class="{text_class}"]', ns).itertext())
                     clip = root.find(f'.//s:clipPath[@id="{clip_id}"]/s:rect', ns)

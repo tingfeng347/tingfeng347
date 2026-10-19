@@ -459,6 +459,17 @@ def contribution_preview(theme, begin):
     )
 
 
+def intro_text(text, advances, x, y, cls):
+    """Pin every glyph to the same cells used by the clip and caret tracks."""
+    glyphs = []
+    for ch, advance in zip(text, advances):
+        glyphs.append(f'<tspan x="{x:.3f}" textLength="{advance:.3f}" '
+                      f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
+        x += advance
+    return (f'<text class="{cls}" y="{y}" xml:space="preserve">'
+            f'{"".join(glyphs)}</text>')
+
+
 def render(theme, d, sha, today, badges):
     c = THEMES[theme]
     mid = W / 2
@@ -474,8 +485,8 @@ def render(theme, d, sha, today, badges):
                     for ch in text]
         width = sum(advances)
         x = mid - width / 2
-        # Match the terminal's prompt + single text run. The emoji is a fixed
-        # prefix, not a double-width keystroke; only the prose is typed.
+        # Keep the target emoji as a fixed prefix; align the typed prose
+        # to individual cells just like the third intro line.
         if cls == "i2":
             prefix, text = text.split(" ", 1)
             prefix_width = sum(advances[:len(prefix) + 1])
@@ -486,32 +497,9 @@ def render(theme, d, sha, today, badges):
             x += prefix_width
             advances = advances[len(prefix) + 1:]
             width = sum(advances)
-            line = (f'<text class="{cls}" x="{x:.3f}" y="{iy}" '
-                    f'textLength="{width:.3f}" lengthAdjust="spacingAndGlyphs">{esc(text)}</text>')
-        elif cls == "i1":
-            # Keep the emoji in its own run, with prose rendered like terminal
-            # text rather than many independently positioned glyph spans.
-            runs, gx = [], x
-            offset = 0
-            for run in re.split('(👋)', text):
-                if not run:
-                    continue
-                run_width = sum(advances[offset:offset + len(run)])
-                runs.append(f'<tspan x="{gx:.3f}" textLength="{run_width:.3f}" '
-                            f'lengthAdjust="spacingAndGlyphs">{esc(run)}</tspan>')
-                gx += run_width
-                offset += len(run)
-            line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
-                    f'{"".join(runs)}</text>')
+            line = intro_text(text, advances, x, iy, cls)
         else:
-            # Preserve the accepted second subtitle's text layout.
-            glyphs, gx = [], x
-            for ch, advance in zip(text, advances):
-                glyphs.append(f'<tspan x="{gx:.3f}" textLength="{advance:.3f}" '
-                              f'lengthAdjust="spacingAndGlyphs">{esc(ch)}</tspan>')
-                gx += advance
-            line = (f'<text class="{cls}" y="{iy}" xml:space="preserve">'
-                    f'{"".join(glyphs)}</text>')
+            line = intro_text(text, advances, x, iy, cls)
         key = f'intro{idx}'
         track_rules, dur, end, _ = typing_track(text, advances, t, key, intro_rng, steady=idx == 0)
         intro_rules.extend(track_rules)

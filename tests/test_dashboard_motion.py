@@ -18,6 +18,21 @@ with patch.object(sys, "argv", [str(generator)]):
 
 
 class TypingMotionTests(unittest.TestCase):
+    def test_headline_hands_over_without_a_stationary_tail(self):
+        ns = {"s": dashboard.SVG_NS}
+        data = dict(top_starred=[], since="2023", languages=[], contributions=0,
+                    commits=0, repos=0, prs=0, stars=0, weeks=[], active_days=0)
+        for theme in dashboard.THEMES:
+            root = ET.fromstring(dashboard.render(theme, data, "test", dt.date(2026, 10, 18), []))
+            css = root.find("s:style", ns).text
+            first = root.find('.//s:clipPath[@id="ic0"]/s:rect', ns)
+            second = root.find('.//s:clipPath[@id="ic1"]/s:rect', ns)
+            duration, start = map(float, re.search(r"animation:\w+ ([\d.]+)s linear ([\d.]+)s", first.get("style")).groups())
+            rule = next(line for line in css.splitlines() if line.startswith("@keyframes clipintro0{"))
+            finish = float(re.search(r"([\d.]+)%\{transform:scaleX\(1\)", rule)[1]) / 100
+            next_start = float(re.search(r"linear ([\d.]+)s", second.get("style"))[1])
+            self.assertAlmostEqual(next_start, start + duration * finish, delta=.001)
+
     def test_opening_sweeps_without_steps_and_caret_stays_aligned(self):
         data = dict(top_starred=[], since="2023", languages=[], contributions=0,
                     commits=0, repos=0, prs=0, stars=0, weeks=[], active_days=0)

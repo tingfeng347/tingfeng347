@@ -503,7 +503,7 @@ def render(theme, d, sha, today, badges):
             prefix_width = sum(advances[:len(prefix) + 1])
             intro.append(f'<text class="subtitle-icon" x="{x:.3f}" y="{iy}" '
                          f'textLength="{prefix_width:.3f}" lengthAdjust="spacingAndGlyphs" '
-                         f'xml:space="preserve" style="animation-delay:{t - TYPE_LEAD:.3f}s">'
+                         f'xml:space="preserve" style="animation-delay:{t:.3f}s">'
                          f'{esc(prefix)} </text>')
             x += prefix_width
             advances = advances[len(prefix) + 1:]
@@ -522,12 +522,16 @@ def render(theme, d, sha, today, badges):
                     f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/>'
                     f'</clipPath>')
         intro.append(f'<g clip-path="url(#ic{idx})">{line}</g>')
+        presence = 'sweep-presence' if idx < 2 else 'caret-presence'
+        presence_duration = dur if idx < 2 else dur + TYPE_TAIL
+        presence_start = t if idx < 2 else t - TYPE_LEAD
         intro.append(f'<rect class="typing-caret" x="{x + 2:.3f}" y="{iy - size * .8:.3f}" '
                      f'width="2" height="{size * 1.05:.3f}" rx="1" fill="{c["fg"]}" '
                      f'style="animation:caret{key} {TYPE_LEAD + dur:.3f}s linear '
-                     f'{t - TYPE_LEAD:.3f}s forwards,caret-presence {dur + TYPE_TAIL:.3f}s '
-                     f'linear {t - TYPE_LEAD:.3f}s forwards"/>')
-        t = end + TYPE_TAIL
+                     f'{t - TYPE_LEAD:.3f}s forwards,{presence} {presence_duration:.3f}s '
+                     f'linear {presence_start:.3f}s forwards"/>')
+        # Continue straight into the subtitle when the final headline glyph lands.
+        t = end if idx == 0 else end + TYPE_TAIL
         iy += 40 if size > 24 else 28
 
     # 2) Complete badges follow one another without a row pause. A gliding
@@ -673,6 +677,7 @@ text{{font-family:{MONO}}}
 @keyframes fade{{to{{opacity:1}}}}
 @keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
 @keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
+@keyframes sweep-presence{{0%,99.999%{{opacity:1}}100%{{opacity:0}}}}
 @keyframes caret-presence{{0%{{opacity:0}}3%{{opacity:1}}99.5%{{opacity:1}}100%{{opacity:0}}}}
 @keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}

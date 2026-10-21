@@ -703,6 +703,286 @@ text{{font-family:{MONO}}}
 """
 
 
+# ── mobile plate ─────────────────────────────────────────────────────
+#
+# The desktop plate is 1160 units wide. GitHub renders it at ~846 px on a
+# laptop but at ~308 px on a phone, where its 13 px labels collapse to 3.5 px
+# and the whole composition becomes texture. The mobile plate is a separate
+# portrait column (620 units, served below the phone breakpoint): the same
+# data, voice and caret engine, re-set at phone scale with the seven content
+# blocks stacked, left-aligned and sized so nothing falls under ~9 px when
+# rendered at 308 px. The 3D preview and the snake stay out of it: at 0.5x
+# their labels are illegible and they would push the numbers below the fold.
+
+MW, MH = 620, 970  # MH is the four-row badge baseline; extra rows shift it
+MX0 = 28
+M_H1, M_ROLE, M_DIF, M_CMD = 44, 26, 22, 24
+M_HOST, M_META, M_LEGEND = 26, 19, 18
+M_NUM, M_LABEL, M_CAP, M_FT = 36, 19, 18, 17
+M_BADGE = 1.5  # badge vignettes grow so their 11 px labels survive the shrink
+M_BADGE_GAP = 14
+M_BADGE_STEP = 46
+M_BADGES_TOP = 254
+M_BADGES_ROWS = 4  # rows the baseline layout was measured for
+
+MOBILE_INTRO = [
+    ("Hi There 👋", M_H1, "i1", 64),
+    ("I'm tingfeng347", M_H1, "i1", 116),
+    ("Full-Stack & AI Agent Developer", M_ROLE, "i2", 160),
+    ("Building Coding Agents", M_DIF, "i3", 194),
+    ("Open Source · Knowledge Graphs", M_DIF, "i3", 224),
+]
+
+MOBILE_COMMANDS = ["vim agent.py", "neofetch"]
+
+
+def mobile_intro(c):
+    """Type the portrait intro top to bottom, one line per beat."""
+    nodes, defs, rules = [], [], []
+    rng = random.Random(20261018)
+    t = 0.18
+    for idx, (text, size, cls, y) in enumerate(MOBILE_INTRO):
+        advances = [size * (1.25 if unicodedata.east_asian_width(ch) in "WF" else .6)
+                    for ch in text]
+        width = sum(advances)
+        key = f"mi{idx}"
+        track, dur, end, _ = typing_track(text, advances, t, key, rng,
+                                          steady=True, smooth=True)
+        rules.extend(track)
+        defs.append(
+            f'<clipPath id="mic{idx}" clipPathUnits="userSpaceOnUse">'
+            f'<rect class="mclip" x="{MX0}" y="{y - size}" width="{width:.3f}" '
+            f'height="{size * 1.4:.3f}" style="transform-origin:{MX0}px {y - size}px;'
+            f'animation:clip{key} {dur + TYPE_HOLD:.3f}s linear {t:.3f}s forwards"/></clipPath>')
+        nodes.append(f'<g clip-path="url(#mic{idx})">'
+                     f'{intro_text(text, advances, MX0, y, cls)}</g>')
+        nodes.append(
+            f'<rect class="typing-caret" x="{MX0 + 2}" y="{y - size * .8:.1f}" width="2" '
+            f'height="{size * 1.05:.1f}" rx="1" fill="{c["fg"]}" '
+            f'style="animation:caret{key} {TYPE_LEAD + dur:.3f}s linear {t - TYPE_LEAD:.3f}s forwards,'
+            f'sweep-presence {TYPE_LEAD + dur:.3f}s linear {t - TYPE_LEAD:.3f}s forwards"/>')
+        t = end + 0.05
+    return nodes, defs, rules, t
+
+
+def mobile_badges(badges, start):
+    """Every badge, wrapped to the column width; each row is centred.
+
+    The vignettes are drawn at 1.5x so their 11 px labels land near 8 px at
+    the phone's real 308 px render. At that size a row only fits three to five
+    of them, so the wrap is measured from the fetched widths instead of being
+    hard-coded: shields can change a label's width without us noticing.
+    """
+    limit = MW - 2 * MX0
+    wrapped, row, width = [], [], 0.0
+    for source_row in badges:
+        for badge in source_row:
+            w = badge[2] * M_BADGE
+            add = w if not row else w + M_BADGE_GAP
+            if row and width + add > limit:
+                wrapped.append((row, width))
+                row, width, add = [], 0.0, w
+            row.append((badge, w))
+            width += add
+    if row:
+        wrapped.append((row, width))
+
+    nodes, index = [], 0
+    for r, (items, row_width) in enumerate(wrapped):
+        x = (MW - row_width) / 2
+        for (kind, payload, bw, bh, color), w in items:
+            delay = start + index * 0.035
+            index += 1
+            h = bh * M_BADGE
+            if kind == "img":
+                inner = f'<image href="{payload}" width="{w:.0f}" height="{h:.0f}"/>'
+            else:
+                inner = (f'<rect width="{w:.0f}" height="{h:.0f}" rx="4" fill="#{color}"/>'
+                         f'<text x="{w / 2:.0f}" y="{h * .68:.0f}" text-anchor="middle" '
+                         f'font-size="16" font-family="{MONO}" fill="#fff">{esc(payload)}</text>')
+            nodes.append(f'<g transform="translate({x:.1f},{M_BADGES_TOP + r * M_BADGE_STEP})">'
+                         f'<g class="badge" style="animation-delay:{delay:.3f}s">{inner}</g></g>')
+            x += w + M_BADGE_GAP
+    return nodes, start + index * 0.035, len(wrapped)
+
+
+def mobile_session(c, start, top=474):
+    """A two-command session sized so the prompt and command share one line."""
+    prompt = f"{LOGIN}@github ~ ❯ "
+    adv = M_CMD * .6
+    prompt_w = len(prompt) * adv
+    cmd_x = MX0 + prompt_w
+    clips, session, rules = [], [], []
+    rng = random.Random(20261018)
+    t = start
+    for i, cmd in enumerate(MOBILE_COMMANDS):
+        ly = top + i * 32
+        width = len(cmd) * adv
+        p = t - TYPE_LEAD
+        track, dur, end, _ = typing_track(cmd, [adv] * len(cmd), t, i, rng)
+        rules.extend(track)
+        span = TYPE_LEAD + dur
+        clip_dur = dur + TYPE_HOLD
+        clips.append(
+            f'<clipPath id="mcc{i}" clipPathUnits="userSpaceOnUse">'
+            f'<rect class="cc" x="{cmd_x:.1f}" y="{ly - 24}" width="{width:.1f}" height="34" '
+            f'style="transform-origin:{cmd_x:.1f}px {ly - 24:.1f}px;'
+            f'animation:clip{i} {clip_dur:.3f}s linear {t:.3f}s forwards"/></clipPath>')
+        session.append(
+            f'<text class="pr" x="{MX0}" y="{ly}" xml:space="preserve" '
+            f'textLength="{prompt_w:.1f}" lengthAdjust="spacingAndGlyphs" '
+            f'style="animation-delay:{p:.3f}s">{esc(prompt)}</text>')
+        session.append(
+            f'<g clip-path="url(#mcc{i})">'
+            f'<text class="kc" x="{cmd_x:.1f}" y="{ly}" '
+            f'textLength="{width:.1f}" lengthAdjust="spacingAndGlyphs">{esc(cmd)}</text></g>')
+        life = TYPE_LEAD + dur if i == len(MOBILE_COMMANDS) - 1 else dur + TYPE_TAIL
+        session.append(
+            f'<rect class="typing-caret" x="{cmd_x + 2:.1f}" y="{ly - 19}" width="2" height="25" '
+            f'rx="1" fill="{c["fg"]}" style="animation:caret{i} {span:.3f}s linear {p:.3f}s forwards,'
+            f'caret-presence {life:.3f}s linear {p:.3f}s forwards"/>')
+        t = end + TYPE_TAIL
+
+    typing_end = t - TYPE_TAIL
+    last_y = top + (len(MOBILE_COMMANDS) - 1) * 32
+    caret_x = cmd_x + len(MOBILE_COMMANDS[-1]) * adv + 2
+    session.append(
+        f'<rect class="blink" x="{caret_x:.1f}" y="{last_y - 19}" width="2" height="25" rx="1" '
+        f'fill="{c["fg"]}" style="animation-delay:{typing_end:.3f}s"/>')
+    return clips, "".join(session), rules, typing_end + 0.16
+
+
+def render_mobile(theme, d, sha, today, badges):
+    c = THEMES[theme]
+    intro, defs_intro, intro_rules, t = mobile_intro(c)
+    badge_svg, t, rows = mobile_badges(badges, t + 0.08)
+    shift = (rows - M_BADGES_ROWS) * M_BADGE_STEP
+    command_clips, session, caret_rules, out = mobile_session(c, t + 0.12, 474 + shift)
+    defs = defs_intro + command_clips
+    rules = intro_rules + caret_rules
+    y_host, y_rule, y_top = 554 + shift, 570 + shift, 594 + shift
+    y_bar, y_legend = 622 + shift, 656 + shift
+    y_stat, y_cap = 740 + shift, 890 + shift
+    height = MH + shift
+
+    ranked = d["top_starred"] or [("—", {"stars": 0})]
+    top = ranked[0]
+    head = (
+        f'<text class="host" x="{MX0}" y="{y_host}" style="animation-delay:{out:.2f}s">'
+        f'{LOGIN}@github</text>'
+        f'<text class="since" x="348" y="{y_host}" style="animation-delay:{out + 0.05:.2f}s">'
+        f'since {d["since"]}</text>'
+        f'<line class="mrule" x1="{MX0}" y1="{y_rule}" x2="{MW - MX0}" y2="{y_rule}" '
+        f'stroke="{c["key"]}" stroke-opacity=".35" style="animation-delay:{out:.2f}s"/>'
+        f'<text class="since" x="{MX0}" y="{y_top}" style="animation-delay:{out + 0.08:.2f}s">'
+        f'top repo · {esc(top[0].split("/")[-1])} ★{top[1]["stars"]}</text>'
+    )
+
+    langs = d["languages"]
+    total_lang = sum(v for _, v in langs) or 1
+    bar_x, bar_y, bar_w, bar_h = MX0, y_bar, MW - 2 * MX0, 10
+    bar, cursor_x = [], bar_x
+    for i, (name, count) in enumerate(langs):
+        seg = max(3.0, count / total_lang * bar_w - 3)
+        bar.append(f'<rect x="{cursor_x:.1f}" y="{bar_y}" width="{seg:.1f}" height="{bar_h}" '
+                   f'rx="3" fill="{LANG_COLORS[i % len(LANG_COLORS)]}"/>')
+        cursor_x += seg + 3
+    defs.append(wipe("mbar", bar_x, bar_y, bar_w, bar_h, out + 0.16, 0.62))
+
+    legend, lx, ly = [], bar_x, y_legend
+    for i, (name, count) in enumerate(langs):
+        col = LANG_COLORS[i % len(LANG_COLORS)]
+        text = f"{name} {count / total_lang * 100:.0f}%"
+        item = 17 + len(text) * M_LEGEND * .6 + 26
+        if lx + item > MW - MX0 and lx > bar_x:
+            lx, ly = bar_x, ly + 24
+        delay = out + 0.30 + i * 0.07
+        legend.append(
+            f'<circle class="mdot" cx="{lx + 5:.1f}" cy="{ly - 6}" r="4.5" fill="{col}" '
+            f'style="animation-delay:{delay:.2f}s"/>'
+            f'<text class="lg" x="{lx + 15:.1f}" y="{ly}" '
+            f'style="animation-delay:{delay:.2f}s">{esc(name)} '
+            f'<tspan fill="{c["muted"]}">{count / total_lang * 100:.0f}%</tspan></text>')
+        lx += item
+
+    # Four stats keep a clean 2x2; pull requests stay in the desktop plate.
+    stats = [
+        (f'{d["contributions"]:,}', "contributions / year"),
+        (f'{d["commits"]:,}', "commits"),
+        (f'{d["repos"]}', "public repos"),
+        (f'{d["stars"]:,}', "stars"),
+    ]
+    num, lab = [], []
+    for i, (value, label) in enumerate(stats):
+        sx = MX0 + (i % 2) * 292
+        sy = y_stat + (i // 2) * 80
+        delay = out + 0.42 + i * 0.08
+        num.append(f'<text class="num" x="{sx}" y="{sy}" fill="{c["stat_colors"][i % 5]}" '
+                   f'style="animation-delay:{delay:.2f}s">{esc(value)}</text>')
+        lab.append(f'<text class="nl" x="{sx}" y="{sy + 22}" '
+                   f'style="animation-delay:{delay + 0.05:.2f}s">{esc(label)}</text>')
+
+    cap = (
+        f'<text class="cap" x="{MX0}" y="{y_cap}" style="animation-delay:{out + 1.00:.2f}s">'
+        f'{len(d["weeks"])} weeks · {d["active_days"]} active days</text>'
+    )
+    # One footer line: two 17 px texts pinned to the extremes collide on a
+    # 308 px render, and the build hash is not worth a second line there.
+    footer = (
+        f'<text class="ft" x="{MX0}" y="{height - 38}" style="animation-delay:{out + 1.06:.2f}s">'
+        f'{LOGIN}.github.io · {today:%Y-%m-%d}</text>'
+    )
+
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {MW} {height}" width="{MW}" height="{height}" role="img" aria-labelledby="t">
+<title id="t">{LOGIN} — terminal dashboard (phone)</title>
+<style>
+text{{font-family:{MONO}}}
+.i1{{font-size:{M_H1}px;font-weight:700;fill:{c["fg"]}}}
+.i2{{font-size:{M_ROLE}px;fill:{c["fg"]}}}
+.i3{{font-size:{M_DIF}px;fill:{c["muted"]}}}
+.pr{{font-size:{M_CMD}px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
+.pr,.kc,.i1,.i2,.i3{{font-kerning:none;font-variant-ligatures:none}}
+.kc{{font-size:{M_CMD}px;fill:{c["fg"]}}}
+.cc{{transform:scaleX(0)}}
+.typing-caret{{opacity:0}}
+.blink{{opacity:0;animation:blink 1.1s steps(1,end) infinite}}
+.badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
+.host{{font-size:{M_HOST}px;font-weight:700;fill:{c["accent"]};opacity:0;animation:rise .55s cubic-bezier(.16,1,.3,1) both}}
+.since{{font-size:{M_META}px;fill:{c["muted"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.mrule{{opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.mdot{{opacity:0;animation:fade .4s cubic-bezier(.22,1,.36,1) both}}
+.lg{{font-size:{M_LEGEND}px;fill:{c["fg"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.num{{font-size:{M_NUM}px;font-weight:700;letter-spacing:-.5px;opacity:0;animation:rise .6s cubic-bezier(.16,1,.3,1) both}}
+.nl{{font-size:{M_LABEL}px;fill:{c["muted"]};opacity:0;animation:fade .5s cubic-bezier(.22,1,.36,1) both}}
+.cap{{font-size:{M_CAP}px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
+.ft{{font-size:{M_FT}px;fill:{c["muted"]};opacity:0;animation:fade .55s cubic-bezier(.22,1,.36,1) both}}
+{"\n".join(rules)}
+@keyframes badge-in{{from{{opacity:0}}to{{opacity:1}}}}
+@keyframes fade{{to{{opacity:1}}}}
+@keyframes rise{{from{{opacity:0;transform:translateY(12px)}}to{{opacity:1;transform:translateY(0)}}}}
+@keyframes reveal{{from{{transform:scaleX(0)}}to{{transform:scaleX(1)}}}}
+@keyframes sweep-presence{{0%,99.999%{{opacity:1}}100%{{opacity:0}}}}
+@keyframes caret-presence{{0%{{opacity:0}}3%{{opacity:1}}99.5%{{opacity:1}}100%{{opacity:0}}}}
+@keyframes blink{{0%{{opacity:1}}50%{{opacity:0}}}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
+.pr,.blink,.host,.since,.lg,.num,.nl,.cap,.ft,.i1,.i2,.i3,.badge,.mdot,.mrule{{opacity:1}}
+.cc,.mclip{{transform:none!important}}.typing-caret{{display:none}}}}
+</style>
+<defs>{"".join(defs)}</defs>
+{"".join(intro)}
+{"".join(badge_svg)}
+{session}
+{head}
+<g clip-path="url(#mbar)">{"".join(bar)}</g>
+{"".join(legend)}
+{"".join(num)}
+{"".join(lab)}
+{cap}
+{footer}
+</svg>
+"""
+
+
 def main():
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
@@ -718,6 +998,8 @@ def main():
     for theme in THEMES:
         (OUT / f"terminal-{theme}.svg").write_text(
             render(theme, d, sha, today, badges), encoding="utf-8")
+        (OUT / f"terminal-{theme}-mobile.svg").write_text(
+            render_mobile(theme, d, sha, today, badges), encoding="utf-8")
     print(f"contributions={d['contributions']} repos={d['repos']} stars={d['stars']} "
           f"badges={n_img}/{sum(len(r) for r in badges)}")
 

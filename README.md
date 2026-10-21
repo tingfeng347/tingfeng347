@@ -1,6 +1,14 @@
 <p align="center">
   <picture>
     <source
+      media="(prefers-color-scheme: dark) and (max-width: 640px)"
+      srcset="./assets/terminal-dark-mobile.svg?v=phone-v1"
+    />
+    <source
+      media="(prefers-color-scheme: light) and (max-width: 640px)"
+      srcset="./assets/terminal-light-mobile.svg?v=phone-v1"
+    />
+    <source
       media="(prefers-color-scheme: dark)"
       srcset="./assets/terminal-dark.svg?v=intro-handover-v5"
     />
@@ -11,7 +19,7 @@
     <img
       width="100%"
       src="./assets/terminal-dark.svg?v=intro-handover-v5"
-      alt="tingfeng347 — animated terminal: intro slides left to reveal a 3D contribution preview, followed by a typing session, languages, stats and a looping contribution snake"
+      alt="tingfeng347 — terminal dashboard: role, tech stack, a short typing session, yearly contributions, commits, repos, stars, language mix and a contribution snake"
     />
   </picture>
 </p>

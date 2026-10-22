@@ -1,6 +1,5 @@
 """Keep the centered opening and sequence the 3D preview after every badge."""
 
-import base64
 import datetime as dt
 import re
 import unittest
@@ -12,33 +11,48 @@ from test_dashboard_motion import dashboard
 class IntroDockTests(unittest.TestCase):
     def test_preview_is_embedded_and_keeps_its_styles_isolated(self):
         ns = {"s": dashboard.SVG_NS}
-        for theme, filename in (("dark", "profile-night-view.svg"),
-                                ("light", "profile-season.svg")):
-            with self.subTest(theme=theme):
-                panel = ET.fromstring(f'<svg xmlns="{dashboard.SVG_NS}">'
-                                      f'{dashboard.contribution_preview(theme, 4.5)}</svg>')
-                group = panel.find('s:g', ns)
-                self.assertEqual(group.get('style'), 'animation-delay:4.500s')
-                image = group.find('s:image', ns)
-                prefix, encoded = image.get('href').split(',', 1)
-                self.assertEqual(prefix, 'data:image/svg+xml;base64')
-                chart = ET.fromstring(base64.b64decode(encoded))
-                original = ET.parse(dashboard.OUT.parent / 'profile-3d-contrib' / filename).getroot()
-                # Preserve final chart geometry and labels while removing the
-                # opaque canvas and SMIL's incomplete opening frame.
-                animated = {f'{{{dashboard.SVG_NS}}}animate',
-                            f'{{{dashboard.SVG_NS}}}animateTransform'}
-                self.assertFalse(any(n.tag in animated for n in chart.iter()))
-                geometry = lambda tree: [(n.tag, n.attrib, (n.text or '').strip())
-                                         for n in tree.iter() if n.tag not in animated
-                                         and n.tag != f'{{{dashboard.SVG_NS}}}style'
-                                         and 'fill-bg' not in n.get('class', '').split()]
-                self.assertEqual(geometry(chart), geometry(original))
-                self.assertFalse(chart.findall('s:rect[@class="fill-bg"]', ns))
-                self.assertFalse(group.findall('s:text', ns))
-                self.assertFalse(group.findall('.//s:style', ns))
-                self.assertLessEqual(float(image.get('x')) + float(image.get('width')),
-                                     dashboard.W - 20)
+        for theme, filenames in dashboard.CONTRIBUTION_THEMES.items():
+            for filename in filenames:
+                with self.subTest(theme=theme, filename=filename):
+                    panel = ET.fromstring(f'<svg xmlns="{dashboard.SVG_NS}">'
+                                          f'{dashboard.contribution_preview(theme, 4.5, filename)}</svg>')
+                    group = panel.find('s:g', ns)
+                    self.assertEqual(group.get('style'), 'animation-delay:4.500s')
+                    self.assertEqual(group.get('data-contrib-theme'), filename)
+                    chart = group.find('s:g/s:svg', ns)
+                    self.assertEqual(chart.get('class'), 'contrib-art')
+                    animations = chart.findall('.//s:animate', ns) + chart.findall('.//s:animateTransform', ns)
+                    self.assertGreater(len(animations), 0)
+                    for animation in animations:
+                        self.assertEqual(animation.get('repeatCount'), 'indefinite')
+                        self.assertEqual(animation.get('begin'), '4.930s')
+                        self.assertEqual(animation.get('dur'), '8s')
+                        self.assertEqual(len(animation.get('values').split(';')),
+                                         len(animation.get('keyTimes').split(';')))
+                    static = group.find('s:svg', ns)
+                    self.assertFalse(static.findall('.//s:animate', ns))
+                    self.assertFalse(static.findall('.//s:animateTransform', ns))
+                    original = ET.parse(dashboard.OUT.parent / 'profile-3d-contrib' / filename).getroot()
+                    animated = {f'{{{dashboard.SVG_NS}}}animate', f'{{{dashboard.SVG_NS}}}animateTransform'}
+                    geometry = lambda tree: [(n.tag, n.attrib, (n.text or '').strip())
+                                             for n in tree.iter() if n is not tree
+                                             and n.tag not in animated
+                                             and n.tag != f'{{{dashboard.SVG_NS}}}style'
+                                             and 'fill-bg' not in n.get('class', '').split()]
+                    self.assertEqual(geometry(static), geometry(original))
+                    self.assertFalse(chart.findall('s:rect[@class="fill-bg"]', ns))
+                    css = chart.find('s:style', ns).text
+                    self.assertIn('.contrib-art *{', css)
+                    self.assertIn('.contrib-art .fill-fg{', css)
+                    self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
+
+    def test_theme_is_selected_at_generation_time(self):
+        from unittest.mock import patch
+        for theme, choices in dashboard.CONTRIBUTION_THEMES.items():
+            with patch.object(dashboard.random, 'choice', return_value=choices[-1]) as choose:
+                svg = dashboard.contribution_preview(theme, 0)
+                choose.assert_called_once_with(choices)
+                self.assertIn(f'data-contrib-theme="{choices[-1]}"', svg)
 
     def test_intro_docks_only_after_badges_then_terminal_starts(self):
         data = dict(top_starred=[], since='2023', languages=[], contributions=0,
@@ -65,6 +79,8 @@ class IntroDockTests(unittest.TestCase):
         self.assertIn('.intro-layout{transform:translateX(-240px)', css)
         self.assertIn('.contrib-preview{opacity:1;', css)
         self.assertIn('@media (prefers-reduced-motion:reduce)', css)
+        self.assertIn('.contrib-static{display:none}', css)
+        self.assertIn('.contrib-motion{display:none}.contrib-static{display:inline}', css)
 
 
 if __name__ == '__main__':

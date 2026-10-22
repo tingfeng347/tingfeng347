@@ -18,8 +18,8 @@ One self-contained SVG per colour scheme. shields.io badges are fetched once and
 inlined as data URIs (with a flat-chip fallback). Snake SVGs are refreshed from
 the existing output branch and inlined with isolated CSS; committed copies
 provide an offline fallback. No external resources are needed at render time.
-The 3D chart embeds the locally generated final geometry on a transparent
-background, so it shares the terminal's surface.
+The 3D chart loops inline with scoped styles and a randomly selected theme.
+A static copy provides the reduced-motion view on the same transparent surface.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
 Only the standard library is used, so the workflow needs no install step.
@@ -436,37 +436,59 @@ def typing_session(c, start):
 
 # ── plate ─────────────────────────────────────────────────────────────
 
-def contribution_preview(theme, begin):
-    """Embed the generated 3D chart as an isolated, offline-safe SVG image.
+CONTRIBUTION_THEMES = {
+    "dark": ("profile-night-green.svg", "profile-night-rainbow.svg", "profile-night-view.svg"),
+    "light": ("profile-green-animate.svg", "profile-season-animate.svg",
+              "profile-south-season-animate.svg", "profile-gitblock.svg"),
+}
 
-    A separate SVG image document keeps the chart's universal font rule and
-    class names away from the terminal's typing styles.
-    """
-    filename = "profile-night-view.svg" if theme == "dark" else "profile-season.svg"
+
+def contribution_preview(theme, begin, filename=None):
+    """Inline a scoped, looping chart; nested SVG images can freeze SMIL."""
+    filename = filename or random.choice(CONTRIBUTION_THEMES[theme])
     source = OUT.parent / "profile-3d-contrib" / filename
     chart = ET.fromstring(source.read_bytes())
-    # Remove the opaque canvas, preserving the chart's actual shapes. Donut
-    # holes remain transparent and separator strokes match the README surface.
     for child in list(chart):
         if child.tag == f"{{{SVG_NS}}}rect" and "fill-bg" in child.get("class", "").split():
             chart.remove(child)
     surface = "#0d1117" if theme == "dark" else "#ffffff"
     style = chart.find(f"{{{SVG_NS}}}style")
-    style.text += f"\n.stroke-bg {{ stroke: {surface}; }}"
-    # Animated SVGs used inside another SVG image may freeze at their first
-    # SMIL frame (flat columns, invisible language pie). The generator already
-    # writes final values on the base elements, so retain those and remove only
-    # the inner animation. Our outer CSS owns the single preview entrance.
-    for node in chart.iter():
+    # SVG styles share the outer document: scope even the universal font rule.
+    style.text = re.sub(r'([^{}]+)\{',
+                        lambda match: ','.join('.contrib-art ' + selector.strip()
+                                               for selector in match[1].split(',')) + '{',
+                        style.text)
+    style.text += f"\n.contrib-art .stroke-bg {{ stroke: {surface}; }}"
+    chart.set("class", "contrib-art")
+    for name, value in dict(x="660", y="0", width="480", height="318.75",
+                            preserveAspectRatio="xMidYMid meet").items():
+        chart.set(name, value)
+    static = ET.fromstring(ET.tostring(chart))
+    animated_tags = {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}
+    for node in static.iter():
         for child in list(node):
-            if child.tag in {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}:
+            if child.tag in animated_tags:
                 node.remove(child)
-    encoded = base64.b64encode(ET.tostring(chart, encoding="utf-8")).decode("ascii")
+    static.set("class", "contrib-art contrib-static")
+    for node in chart.iter():
+        if node.tag not in animated_tags:
+            continue
+        # Preserve the original three-second build, hold the finished chart,
+        # then rewind gently before the next cycle. All parts share one clock.
+        values = node.get("values").split(';')
+        intervals = len(values) - 1
+        times = [k / intervals * .375 for k in range(len(values))]
+        times += [.875] + [.875 + k / intervals * .125 for k in range(1, len(values))]
+        node.set("values", ';'.join(values + [values[-1]] + values[-2::-1]))
+        node.set("keyTimes", ';'.join(f'{t:.6f}' for t in times))
+        node.set("dur", "8s")
+        node.set("begin", f"{begin + .43:.3f}s")
+        node.set("repeatCount", "indefinite")
     return (
-        f'<g class="contrib-preview" style="animation-delay:{begin:.3f}s">'
-        f'<image class="contrib-image" x="660" y="0" width="480" height="318.75" '
-        f'preserveAspectRatio="xMidYMid meet" href="data:image/svg+xml;base64,{encoded}"/>'
-        f'</g>'
+        f'<g class="contrib-preview" data-contrib-theme="{filename}" '
+        f'style="animation-delay:{begin:.3f}s">'
+        f'<g class="contrib-motion">{ET.tostring(chart, encoding="unicode")}</g>'
+        f'{ET.tostring(static, encoding="unicode")}</g>'
     )
 
 
@@ -654,6 +676,7 @@ text{{font-family:{MONO}}}
 .subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .snake-panel{{opacity:0;animation:fade .45s ease-out both}}
 .intro-layout{{transform:translateX(-{INTRO_SHIFT}px);animation:intro-dock {INTRO_DOCK_DURATION}s cubic-bezier(.22,1,.36,1) {dock_start:.3f}s both}}
+.contrib-static{{display:none}}
 .contrib-preview{{opacity:1;animation:contrib-enter .43s cubic-bezier(.22,1,.36,1) both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
@@ -683,7 +706,8 @@ text{{font-family:{MONO}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important}}
 .pr,.blink,.host,.since,.lg,.num,.nl,.cap,.ft,.i1,.i2,.i3,.subtitle-icon,.badge,.snake-panel{{opacity:1}}
 .cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}
-.snake-art .snk-s,.snake-art .snk-u{{display:none}}}}
+.snake-art .snk-s,.snake-art .snk-u{{display:none}}
+.contrib-motion{{display:none}}.contrib-static{{display:inline}}}}
 </style>
 <defs>{"".join(defs)}</defs>
 <g class="intro-layout">

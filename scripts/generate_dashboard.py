@@ -18,7 +18,7 @@ One self-contained SVG per colour scheme. shields.io badges are fetched once and
 inlined as data URIs (with a flat-chip fallback). Snake SVGs are refreshed from
 the existing output branch and inlined with isolated CSS; committed copies
 provide an offline fallback. No external resources are needed at render time.
-The 3D chart loops inline with scoped styles and a randomly selected theme.
+The 3D chart animates once inline with scoped styles and a randomly selected theme.
 A static copy provides the reduced-motion view on the same transparent surface.
 
 Usage: GITHUB_TOKEN=... python scripts/generate_dashboard.py [login]
@@ -444,7 +444,7 @@ CONTRIBUTION_THEMES = {
 
 
 def contribution_preview(theme, begin, filename=None):
-    """Inline a scoped, looping chart; nested SVG images can freeze SMIL."""
+    """Inline a scoped, single-play chart; nested SVG images can freeze SMIL."""
     filename = filename or random.choice(CONTRIBUTION_THEMES[theme])
     source = OUT.parent / "profile-3d-contrib" / filename
     chart = ET.fromstring(source.read_bytes())
@@ -470,20 +470,20 @@ def contribution_preview(theme, begin, filename=None):
             if child.tag in animated_tags:
                 node.remove(child)
     static.set("class", "contrib-art contrib-static")
-    for node in chart.iter():
-        if node.tag not in animated_tags:
-            continue
-        # Preserve the original three-second build, hold the finished chart,
-        # then rewind gently before the next cycle. All parts share one clock.
-        values = node.get("values").split(';')
-        intervals = len(values) - 1
-        times = [k / intervals * .375 for k in range(len(values))]
-        times += [.875] + [.875 + k / intervals * .125 for k in range(1, len(values))]
-        node.set("values", ';'.join(values + [values[-1]] + values[-2::-1]))
-        node.set("keyTimes", ';'.join(f'{t:.6f}' for t in times))
-        node.set("dur", "8s")
-        node.set("begin", f"{begin + .43:.3f}s")
-        node.set("repeatCount", "indefinite")
+    for parent in chart.iter():
+        for node in list(parent):
+            if node.tag not in animated_tags:
+                continue
+            # SMIL delays otherwise expose the base geometry (the finished
+            # chart). Set the base to frame zero before the entrance starts.
+            initial = node.get("values").split(';')[0]
+            if node.get("type"):
+                initial = f'{node.get("type")}({initial})'
+            parent.set(node.get("attributeName"), initial)
+            node.set("dur", "3s")
+            node.set("begin", f"{begin + .43:.3f}s")
+            node.set("repeatCount", "1")
+            node.set("fill", "freeze")
     return (
         f'<g class="contrib-preview" data-contrib-theme="{filename}" '
         f'style="animation-delay:{begin:.3f}s">'

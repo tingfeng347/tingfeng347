@@ -24,11 +24,15 @@ class IntroDockTests(unittest.TestCase):
                     animations = chart.findall('.//s:animate', ns) + chart.findall('.//s:animateTransform', ns)
                     self.assertGreater(len(animations), 0)
                     for animation in animations:
-                        self.assertEqual(animation.get('repeatCount'), 'indefinite')
+                        self.assertEqual(animation.get('repeatCount'), '1')
+                        self.assertEqual(animation.get('fill'), 'freeze')
                         self.assertEqual(animation.get('begin'), '4.930s')
-                        self.assertEqual(animation.get('dur'), '8s')
-                        self.assertEqual(len(animation.get('values').split(';')),
-                                         len(animation.get('keyTimes').split(';')))
+                        self.assertEqual(animation.get('dur'), '3s')
+                        parent = next(n for n in chart.iter() if animation in list(n))
+                        initial = animation.get('values').split(';')[0]
+                        if animation.get('type'):
+                            initial = f"{animation.get('type')}({initial})"
+                        self.assertEqual(parent.get(animation.get('attributeName')), initial)
                     static = group.find('s:svg', ns)
                     self.assertFalse(static.findall('.//s:animate', ns))
                     self.assertFalse(static.findall('.//s:animateTransform', ns))

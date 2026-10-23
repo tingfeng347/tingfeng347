@@ -474,12 +474,16 @@ def contribution_preview(theme, begin, filename=None):
         for node in list(parent):
             if node.tag not in animated_tags:
                 continue
-            # SMIL delays otherwise expose the base geometry (the finished
-            # chart). Set the base to frame zero before the entrance starts.
-            initial = node.get("values").split(';')[0]
+            # Keep the final geometry as the SVG base state. A number of
+            # renderers used by README hosts do not run SMIL (and some take
+            # their screenshot before a delayed animation begins); resetting
+            # the parent to frame zero therefore turns the whole chart into a
+            # near-black, empty floor. SMIL still starts from the first value
+            # when supported, while non-animated renderers get a useful chart.
+            final = node.get("values").split(';')[-1]
             if node.get("type"):
-                initial = f'{node.get("type")}({initial})'
-            parent.set(node.get("attributeName"), initial)
+                final = f'{node.get("type")}({final})'
+            parent.set(node.get("attributeName"), final)
             node.set("dur", "3s")
             node.set("begin", f"{begin + .43:.3f}s")
             node.set("repeatCount", "1")

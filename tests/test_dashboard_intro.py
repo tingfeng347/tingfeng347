@@ -29,10 +29,12 @@ class IntroDockTests(unittest.TestCase):
                         self.assertEqual(animation.get('begin'), '4.930s')
                         self.assertEqual(animation.get('dur'), '3s')
                         parent = next(n for n in chart.iter() if animation in list(n))
-                        initial = animation.get('values').split(';')[0]
+                        # The base SVG must retain the final frame so hosts
+                        # that do not run delayed SMIL still show the chart.
+                        final_value = animation.get('values').split(';')[-1]
                         if animation.get('type'):
-                            initial = f"{animation.get('type')}({initial})"
-                        self.assertEqual(parent.get(animation.get('attributeName')), initial)
+                            final_value = f"{animation.get('type')}({final_value})"
+                        self.assertEqual(parent.get(animation.get('attributeName')), final_value)
                     static = group.find('s:svg', ns)
                     self.assertFalse(static.findall('.//s:animate', ns))
                     self.assertFalse(static.findall('.//s:animateTransform', ns))

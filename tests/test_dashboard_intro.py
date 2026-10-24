@@ -29,9 +29,9 @@ class IntroDockTests(unittest.TestCase):
                         self.assertEqual(animation.get('begin'), '4.930s')
                         self.assertEqual(animation.get('dur'), '3s')
                         parent = next(n for n in chart.iter() if animation in list(n))
-                        # The motion layer starts from frame zero; its static
-                        # sibling keeps the finished chart for reduced motion.
-                        final_value = animation.get('values').split(';')[0]
+                        # The base SVG must retain the final frame so hosts
+                        # that do not run delayed SMIL still show the chart.
+                        final_value = animation.get('values').split(';')[-1]
                         if animation.get('type'):
                             final_value = f"{animation.get('type')}({final_value})"
                         self.assertEqual(parent.get(animation.get('attributeName')), final_value)
@@ -40,31 +40,16 @@ class IntroDockTests(unittest.TestCase):
                     self.assertFalse(static.findall('.//s:animateTransform', ns))
                     original = ET.parse(dashboard.OUT.parent / 'profile-3d-contrib' / filename).getroot()
                     animated = {f'{{{dashboard.SVG_NS}}}animate', f'{{{dashboard.SVG_NS}}}animateTransform'}
-                    expected = ET.fromstring(ET.tostring(original))
-                    for parent in expected.iter():
-                        for node in list(parent):
-                            if node.tag not in animated:
-                                continue
-                            final = node.get('values').split(';')[-1]
-                            if node.get('type'):
-                                final = f"{node.get('type')}({final})"
-                            parent.set(node.get('attributeName'), final)
-                            parent.remove(node)
                     geometry = lambda tree: [(n.tag, n.attrib, (n.text or '').strip())
                                              for n in tree.iter() if n is not tree
                                              and n.tag not in animated
                                              and n.tag != f'{{{dashboard.SVG_NS}}}style'
                                              and 'fill-bg' not in n.get('class', '').split()]
-                    self.assertEqual(geometry(static), geometry(expected))
+                    self.assertEqual(geometry(static), geometry(original))
                     self.assertFalse(chart.findall('s:rect[@class="fill-bg"]', ns))
                     css = chart.find('s:style', ns).text
                     self.assertIn('.contrib-art *{', css)
                     self.assertIn('.contrib-art .fill-fg{', css)
-                    if filename == 'profile-night-rainbow.svg':
-                        self.assertNotIn('.contrib-art @keyframes', css)
-                        self.assertIn('.contrib-art .rb-l0-top{fill:rgb(77, 77, 25);}', css)
-                        self.assertIn('.contrib-art .rb-l4-top{fill:rgb(64, 191, 64);}', css)
-                        self.assertNotIn('infinite', css)
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 
     def test_theme_is_selected_at_generation_time(self):
@@ -74,21 +59,6 @@ class IntroDockTests(unittest.TestCase):
                 svg = dashboard.contribution_preview(theme, 0)
                 choose.assert_called_once_with(choices)
                 self.assertIn(f'data-contrib-theme="{choices[-1]}"', svg)
-
-    def test_rainbow_source_keeps_original_dynamic_style(self):
-        source_path = dashboard.OUT.parent / 'profile-3d-contrib' / 'profile-night-rainbow.svg'
-        source = source_path.read_text(encoding='utf-8')
-        self.assertIn('animation:rb-l0-top 10s linear infinite;', source)
-        self.assertIn('@keyframes rb-l0-top{', source)
-        root = ET.parse(source_path).getroot()
-        for parent in root.iter():
-            for animation in list(parent):
-                if animation.tag.endswith('animateTransform'):
-                    initial = animation.get('values').split(';')[0]
-                    self.assertEqual(parent.get('transform'),
-                                     f"{animation.get('type')}({initial})")
-                    return
-        self.fail('rainbow source has no animated entrance frame')
 
     def test_intro_docks_only_after_badges_then_terminal_starts(self):
         data = dict(top_starred=[], since='2023', languages=[], contributions=0,

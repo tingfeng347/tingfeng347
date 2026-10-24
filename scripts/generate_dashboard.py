@@ -442,73 +442,6 @@ CONTRIBUTION_THEMES = {
               "profile-south-season-animate.svg", "profile-gitblock.svg"),
 }
 
-STATIC_RAINBOW_FILLS = {
-    # Use colours from the original rainbow keyframes at different phases so
-    # the static dark/light plates keep the source artwork's cross-colour look.
-    "rb-l0-top": "rgb(77, 77, 25)", "rb-l0-left": "rgb(64, 64, 21)", "rb-l0-right": "rgb(54, 54, 18)",
-    "rb-l1-top": "rgb(115, 38, 115)", "rb-l1-left": "rgb(96, 32, 96)", "rb-l1-right": "rgb(80, 27, 80)",
-    "rb-l2-top": "rgb(45, 45, 134)", "rb-l2-left": "rgb(37, 37, 112)", "rb-l2-right": "rgb(31, 31, 94)",
-    "rb-l3-top": "rgb(51, 153, 153)", "rb-l3-left": "rgb(43, 128, 128)", "rb-l3-right": "rgb(36, 107, 107)",
-    "rb-l4-top": "rgb(64, 191, 64)", "rb-l4-left": "rgb(53, 160, 53)", "rb-l4-right": "rgb(45, 134, 45)",
-}
-
-
-def scope_contribution_css(css):
-    """Prefix chart selectors without corrupting nested keyframe rules."""
-    keyframe_fills = {
-        match.group(1): match.group(2).strip()
-        for match in re.finditer(
-            r'@keyframes\s+([\w-]+)\s*\{\s*[^{}]*\{\s*fill\s*:\s*([^;}]+)',
-            css,
-        )
-    }
-    fallback_fills = []
-    for match in re.finditer(
-        r'\.([\w-]+)\{[^{}]*animation(?:-name)?\s*:\s*([\w-]+)', css
-    ):
-        fill = STATIC_RAINBOW_FILLS.get(match.group(1), keyframe_fills.get(match.group(2)))
-        if fill:
-            fallback_fills.append(f'.contrib-art .{match.group(1)}{{fill:{fill};}}')
-
-    scoped, cursor = [], 0
-    while cursor < len(css):
-        opening = css.find("{", cursor)
-        if opening < 0:
-            scoped.append(css[cursor:])
-            break
-        header = css[cursor:opening]
-        stripped = header.strip()
-        if stripped.startswith("@"):
-            # Preserve at-rules as a block. Contribution sources use this for
-            # keyframes; their inner percentage selectors must stay untouched.
-            depth, end = 1, opening + 1
-            while end < len(css) and depth:
-                if css[end] == "{":
-                    depth += 1
-                elif css[end] == "}":
-                    depth -= 1
-                end += 1
-            if not stripped.startswith("@keyframes"):
-                scoped.append(css[cursor:end])
-            cursor = end
-            continue
-        close = css.find("}", opening + 1)
-        if close < 0:
-            scoped.append(css[cursor:])
-            break
-        leading = header[:len(header) - len(header.lstrip())]
-        selectors = header.strip()
-        prefixed = ",".join(f".contrib-art {selector.strip()}"
-                            for selector in selectors.split(","))
-        body = css[opening + 1:close]
-        # Rainbow sources animate every cell forever. The static fallback
-        # colors above preserve that theme without forcing hundreds of SVG
-        # layers to repaint continuously on the profile page.
-        body = re.sub(r'\banimation(?:-name)?\s*:\s*[^;}]+;?', '', body)
-        scoped.append(f"{leading}{prefixed}{{{body}}}")
-        cursor = close + 1
-    return "".join(scoped) + "".join(fallback_fills)
-
 
 def contribution_preview(theme, begin, filename=None):
     """Inline a scoped, single-play chart; nested SVG images can freeze SMIL."""
@@ -520,12 +453,11 @@ def contribution_preview(theme, begin, filename=None):
             chart.remove(child)
     surface = "#0d1117" if theme == "dark" else "#ffffff"
     style = chart.find(f"{{{SVG_NS}}}style")
-    # SVG styles share the outer document: scope regular selectors, but keep
-    # keyframe names and percentage selectors at the top level. Prefixing an
-    # entire stylesheet blindly turns `@keyframes foo { 0% { ... } }` into
-    # invalid selectors, which makes every contribution cell fall back to the
-    # renderer's default black fill.
-    style.text = scope_contribution_css(style.text)
+    # SVG styles share the outer document: scope even the universal font rule.
+    style.text = re.sub(r'([^{}]+)\{',
+                        lambda match: ','.join('.contrib-art ' + selector.strip()
+                                               for selector in match[1].split(',')) + '{',
+                        style.text)
     style.text += f"\n.contrib-art .stroke-bg {{ stroke: {surface}; }}"
     chart.set("class", "contrib-art")
     for name, value in dict(x="660", y="0", width="480", height="318.75",
@@ -533,27 +465,22 @@ def contribution_preview(theme, begin, filename=None):
         chart.set(name, value)
     static = ET.fromstring(ET.tostring(chart))
     animated_tags = {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}
-    # The upstream source is prepared at frame zero so direct viewers see a
-    # real entrance. Build the static sibling back to its final frame before
-    # removing SMIL, keeping reduced-motion and non-animated renderers useful.
-    for parent in static.iter():
-        for node in list(parent):
-            if node.tag not in animated_tags:
-                continue
-            final = node.get("values").split(';')[-1]
-            if node.get("type"):
-                final = f'{node.get("type")}({final})'
-            parent.set(node.get("attributeName"), final)
-            parent.remove(node)
+    for node in static.iter():
+        for child in list(node):
+            if child.tag in animated_tags:
+                node.remove(child)
     static.set("class", "contrib-art contrib-static")
     for parent in chart.iter():
         for node in list(parent):
             if node.tag not in animated_tags:
                 continue
-            # Start the motion layer at frame zero so the first frame is an
-            # actual build, not the finished chart. The static clone made
-            # above retains the final geometry for reduced-motion rendering.
-            final = node.get("values").split(';')[0]
+            # Keep the final geometry as the SVG base state. A number of
+            # renderers used by README hosts do not run SMIL (and some take
+            # their screenshot before a delayed animation begins); resetting
+            # the parent to frame zero therefore turns the whole chart into a
+            # near-black, empty floor. SMIL still starts from the first value
+            # when supported, while non-animated renderers get a useful chart.
+            final = node.get("values").split(';')[-1]
             if node.get("type"):
                 final = f'{node.get("type")}({final})'
             parent.set(node.get("attributeName"), final)

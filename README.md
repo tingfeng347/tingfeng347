@@ -10,15 +10,15 @@
     />
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="./assets/terminal-dark.svg?v=shared-paints-v10"
+      srcset="./assets/terminal-dark.svg?v=glyph-intro-v11"
     />
     <source
       media="(prefers-color-scheme: light)"
-      srcset="./assets/terminal-light.svg?v=contrib-once-v9"
+      srcset="./assets/terminal-light.svg?v=glyph-intro-v11"
     />
     <img
       width="100%"
-      src="./assets/terminal-dark.svg?v=shared-paints-v10"
+      src="./assets/terminal-dark.svg?v=glyph-intro-v11"
       alt="tingfeng347 — terminal dashboard: role, tech stack, a short typing session, yearly contributions, commits, repos, stars, language mix and a contribution snake"
     />
   </picture>

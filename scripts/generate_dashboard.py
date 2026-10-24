@@ -335,15 +335,16 @@ def keystroke_times(text, start, rng):
     return lands
 
 
-def typing_track(text, advances, start, key, rng, steady=False, smooth=False):
+def typing_track(text, advances, start, key, rng, steady=False, smooth=False, pace=1.0):
     """Share a timeline between the reveal and caret.
 
-    Terminal lines land complete glyphs with word pauses. The large opening
-    lines use a continuous sweep so wide cells cannot create visible jumps.
-    Both modes retain the same duration and handover to the following line.
+    Desktop lines land complete glyphs with word pauses; the mobile layout
+    can request a continuous sweep. Pace scales the shared landing times for
+    larger text, keeping the reveal, caret and next line in sync.
     """
     lands = ([start + k * TYPE_BASE for k in range(len(text))]
              if steady else keystroke_times(text, start, rng))
+    lands = [start + (when - start) * pace for when in lands]
     dur = max(lands[-1] - start, TYPE_HOLD)
     span = TYPE_LEAD + dur
     clip_dur = dur + TYPE_HOLD
@@ -570,7 +571,7 @@ def render(theme, d, sha, today, badges):
     mid = W / 2
     defs = []
 
-    # 1) Sweep the first two lines continuously; retain the third line rhythm.
+    # 1) Reveal complete glyphs on every line, at a consistent visual pace.
     intro, iy = [], 46
     intro_rules = []
     intro_rng = random.Random(20261018)
@@ -597,7 +598,7 @@ def render(theme, d, sha, today, badges):
             line = intro_text(text, advances, x, iy, cls)
         key = f'intro{idx}'
         track_rules, dur, end, _ = typing_track(
-            text, advances, t, key, intro_rng, steady=idx == 0, smooth=idx < 2)
+            text, advances, t, key, intro_rng, pace=size / SUBTITLE_SIZE)
         intro_rules.extend(track_rules)
         defs.append(f'<clipPath id="ic{idx}" clipPathUnits="userSpaceOnUse">'
                     f'<rect class="cc intro-clip" x="{x:.3f}" y="{iy - size}" '

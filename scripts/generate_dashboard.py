@@ -443,14 +443,13 @@ CONTRIBUTION_THEMES = {
 }
 
 STATIC_RAINBOW_FILLS = {
-    # Muted jewel tones keep the grid legible against the night surface while
-    # giving the static fallback the same cross-colour depth as the reference
-    # rainbow animation (olive → wine → indigo → teal → green).
-    "rb-l0-top": "#59632e", "rb-l0-left": "#4b5426", "rb-l0-right": "#3b431f",
-    "rb-l1-top": "#8b4059", "rb-l1-left": "#75354c", "rb-l1-right": "#5d2c3d",
-    "rb-l2-top": "#4b5c9f", "rb-l2-left": "#40508e", "rb-l2-right": "#334073",
-    "rb-l3-top": "#3e9b9b", "rb-l3-left": "#358585", "rb-l3-right": "#2c6d6d",
-    "rb-l4-top": "#58b957", "rb-l4-left": "#4a9f4b", "rb-l4-right": "#3b803f",
+    # Use colours from the original rainbow keyframes at different phases so
+    # the static dark/light plates keep the source artwork's cross-colour look.
+    "rb-l0-top": "rgb(77, 77, 25)", "rb-l0-left": "rgb(64, 64, 21)", "rb-l0-right": "rgb(54, 54, 18)",
+    "rb-l1-top": "rgb(115, 38, 115)", "rb-l1-left": "rgb(96, 32, 96)", "rb-l1-right": "rgb(80, 27, 80)",
+    "rb-l2-top": "rgb(45, 45, 134)", "rb-l2-left": "rgb(37, 37, 112)", "rb-l2-right": "rgb(31, 31, 94)",
+    "rb-l3-top": "rgb(51, 153, 153)", "rb-l3-left": "rgb(43, 128, 128)", "rb-l3-right": "rgb(36, 107, 107)",
+    "rb-l4-top": "rgb(64, 191, 64)", "rb-l4-left": "rgb(53, 160, 53)", "rb-l4-right": "rgb(45, 134, 45)",
 }
 
 
@@ -534,22 +533,27 @@ def contribution_preview(theme, begin, filename=None):
         chart.set(name, value)
     static = ET.fromstring(ET.tostring(chart))
     animated_tags = {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}
-    for node in static.iter():
-        for child in list(node):
-            if child.tag in animated_tags:
-                node.remove(child)
+    # The upstream source is prepared at frame zero so direct viewers see a
+    # real entrance. Build the static sibling back to its final frame before
+    # removing SMIL, keeping reduced-motion and non-animated renderers useful.
+    for parent in static.iter():
+        for node in list(parent):
+            if node.tag not in animated_tags:
+                continue
+            final = node.get("values").split(';')[-1]
+            if node.get("type"):
+                final = f'{node.get("type")}({final})'
+            parent.set(node.get("attributeName"), final)
+            parent.remove(node)
     static.set("class", "contrib-art contrib-static")
     for parent in chart.iter():
         for node in list(parent):
             if node.tag not in animated_tags:
                 continue
-            # Keep the final geometry as the SVG base state. A number of
-            # renderers used by README hosts do not run SMIL (and some take
-            # their screenshot before a delayed animation begins); resetting
-            # the parent to frame zero therefore turns the whole chart into a
-            # near-black, empty floor. SMIL still starts from the first value
-            # when supported, while non-animated renderers get a useful chart.
-            final = node.get("values").split(';')[-1]
+            # Start the motion layer at frame zero so the first frame is an
+            # actual build, not the finished chart. The static clone made
+            # above retains the final geometry for reduced-motion rendering.
+            final = node.get("values").split(';')[0]
             if node.get("type"):
                 final = f'{node.get("type")}({final})'
             parent.set(node.get("attributeName"), final)

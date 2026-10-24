@@ -19,7 +19,7 @@ class IntroDockTests(unittest.TestCase):
                     group = panel.find('s:g', ns)
                     self.assertEqual(group.get('style'), 'animation-delay:4.500s')
                     self.assertEqual(group.get('data-contrib-theme'), filename)
-                    chart = group.find('s:g/s:svg', ns)
+                    chart = group.find('s:svg', ns)
                     self.assertEqual(chart.get('class'), 'contrib-art')
                     animations = chart.findall('.//s:animate', ns) + chart.findall('.//s:animateTransform', ns)
                     self.assertGreater(len(animations), 0)
@@ -29,30 +29,14 @@ class IntroDockTests(unittest.TestCase):
                         self.assertEqual(animation.get('begin'), '4.930s')
                         self.assertEqual(animation.get('dur'), '3s')
                         parent = next(n for n in chart.iter() if animation in list(n))
-                        # The base SVG must retain the final frame so hosts
-                        # that do not run delayed SMIL still show the chart.
-                        final_value = animation.get('values').split(';')[-1]
+                        initial_value = animation.get('values').split(';')[0]
                         if animation.get('type'):
-                            final_value = f"{animation.get('type')}({final_value})"
-                        self.assertEqual(parent.get(animation.get('attributeName')), final_value)
-                    static = group.find('s:svg', ns)
-                    self.assertFalse(static.findall('.//s:animate', ns))
-                    self.assertFalse(static.findall('.//s:animateTransform', ns))
-                    original = ET.parse(dashboard.OUT.parent / 'profile-3d-contrib' / filename).getroot()
-                    animated = {f'{{{dashboard.SVG_NS}}}animate', f'{{{dashboard.SVG_NS}}}animateTransform'}
-                    geometry = lambda tree: [(n.tag, n.attrib, (n.text or '').strip())
-                                             for n in tree.iter() if n is not tree
-                                             and n.tag not in animated
-                                             and n.tag != f'{{{dashboard.SVG_NS}}}style'
-                                             and 'fill-bg' not in n.get('class', '').split()]
-                    self.assertEqual(geometry(static), geometry(original))
+                            initial_value = f"{animation.get('type')}({initial_value})"
+                        self.assertEqual(parent.get(animation.get('attributeName')), initial_value)
                     self.assertFalse(chart.findall('s:rect[@class="fill-bg"]', ns))
                     css = chart.find('s:style', ns).text
                     self.assertIn('.contrib-art *{', css)
                     self.assertIn('.contrib-art .fill-fg{', css)
-                    if filename == 'profile-night-rainbow.svg':
-                        self.assertNotIn('.contrib-art @keyframes', css)
-                        self.assertRegex(css, r'\.contrib-art \.rb-l0-top\{fill:')
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 
     def test_theme_is_selected_at_generation_time(self):
@@ -88,8 +72,7 @@ class IntroDockTests(unittest.TestCase):
         self.assertIn('.intro-layout{transform:translateX(-240px)', css)
         self.assertIn('.contrib-preview{opacity:1;', css)
         self.assertIn('@media (prefers-reduced-motion:reduce)', css)
-        self.assertIn('.contrib-static{display:none}', css)
-        self.assertIn('.contrib-motion{display:none}.contrib-static{display:inline}', css)
+        self.assertNotIn('.contrib-motion{display:none}', css)
 
 
 if __name__ == '__main__':

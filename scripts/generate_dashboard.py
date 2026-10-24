@@ -442,24 +442,8 @@ CONTRIBUTION_THEMES = {
               "profile-south-season-animate.svg", "profile-gitblock.svg"),
 }
 
-
 def scope_contribution_css(css):
-    """Prefix chart selectors without corrupting nested keyframe rules."""
-    keyframe_fills = {
-        match.group(1): match.group(2).strip()
-        for match in re.finditer(
-            r'@keyframes\s+([\w-]+)\s*\{\s*[^{}]*\{\s*fill\s*:\s*([^;}]+)',
-            css,
-        )
-    }
-    fallback_fills = []
-    for match in re.finditer(
-        r'\.([\w-]+)\{[^{}]*animation(?:-name)?\s*:\s*([\w-]+)', css
-    ):
-        fill = keyframe_fills.get(match.group(2))
-        if fill:
-            fallback_fills.append(f'.contrib-art .{match.group(1)}{{fill:{fill};}}')
-
+    """Prefix selectors while leaving the upstream SVG animation intact."""
     scoped, cursor = [], 0
     while cursor < len(css):
         opening = css.find("{", cursor)
@@ -491,7 +475,7 @@ def scope_contribution_css(css):
                             for selector in selectors.split(","))
         scoped.append(f"{leading}{prefixed}{{{css[opening + 1:close + 1]}")
         cursor = close + 1
-    return "".join(scoped) + "".join(fallback_fills)
+    return "".join(scoped)
 
 
 def contribution_preview(theme, begin, filename=None):
@@ -515,37 +499,22 @@ def contribution_preview(theme, begin, filename=None):
     for name, value in dict(x="660", y="0", width="480", height="318.75",
                             preserveAspectRatio="xMidYMid meet").items():
         chart.set(name, value)
-    static = ET.fromstring(ET.tostring(chart))
     animated_tags = {f"{{{SVG_NS}}}animate", f"{{{SVG_NS}}}animateTransform"}
-    for node in static.iter():
-        for child in list(node):
-            if child.tag in animated_tags:
-                node.remove(child)
-    static.set("class", "contrib-art contrib-static")
     for parent in chart.iter():
         for node in list(parent):
             if node.tag not in animated_tags:
                 continue
-            # Keep the final geometry as the SVG base state. A number of
-            # renderers used by README hosts do not run SMIL (and some take
-            # their screenshot before a delayed animation begins); resetting
-            # the parent to frame zero therefore turns the whole chart into a
-            # near-black, empty floor. SMIL still starts from the first value
-            # when supported, while non-animated renderers get a useful chart.
-            final = node.get("values").split(';')[-1]
+            initial = node.get("values").split(';')[0]
             if node.get("type"):
-                final = f'{node.get("type")}({final})'
-            parent.set(node.get("attributeName"), final)
+                initial = f'{node.get("type")}({initial})'
+            parent.set(node.get("attributeName"), initial)
             node.set("dur", "3s")
             node.set("begin", f"{begin + .43:.3f}s")
             node.set("repeatCount", "1")
             node.set("fill", "freeze")
-    return (
-        f'<g class="contrib-preview" data-contrib-theme="{filename}" '
-        f'style="animation-delay:{begin:.3f}s">'
-        f'<g class="contrib-motion">{ET.tostring(chart, encoding="unicode")}</g>'
-        f'{ET.tostring(static, encoding="unicode")}</g>'
-    )
+    return (f'<g class="contrib-preview" data-contrib-theme="{filename}" '
+            f'style="animation-delay:{begin:.3f}s">'
+            f'{ET.tostring(chart, encoding="unicode")}</g>')
 
 
 def intro_text(text, advances, x, y, cls):
@@ -732,7 +701,6 @@ text{{font-family:{MONO}}}
 .subtitle-icon{{font-size:{SUBTITLE_SIZE}px;fill:{c["fg"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
 .snake-panel{{opacity:0;animation:fade .45s ease-out both}}
 .intro-layout{{transform:translateX(-{INTRO_SHIFT}px);animation:intro-dock {INTRO_DOCK_DURATION}s cubic-bezier(.22,1,.36,1) {dock_start:.3f}s both}}
-.contrib-static{{display:none}}
 .contrib-preview{{opacity:1;animation:contrib-enter .43s cubic-bezier(.22,1,.36,1) both}}
 .badge{{animation:badge-in {BADGE_FADE:.3f}s cubic-bezier(.22,1,.36,1) both}}
 .pr{{font-size:16px;fill:{c["muted"]};opacity:0;animation:fade .2s cubic-bezier(.22,1,.36,1) both}}
@@ -763,7 +731,7 @@ text{{font-family:{MONO}}}
 .pr,.blink,.host,.since,.lg,.num,.nl,.cap,.ft,.i1,.i2,.i3,.subtitle-icon,.badge,.snake-panel{{opacity:1}}
 .cc,.intro-clip{{transform:none!important}}.typing-caret{{display:none}}
 .snake-art .snk-s,.snake-art .snk-u{{display:none}}
-.contrib-motion{{display:none}}.contrib-static{{display:inline}}}}
+}}
 </style>
 <defs>{"".join(defs)}</defs>
 <g class="intro-layout">

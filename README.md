@@ -10,7 +10,7 @@
     />
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="./assets/terminal-dark.svg?v=contrib-once-v9"
+      srcset="./assets/terminal-dark.svg?v=shared-paints-v10"
     />
     <source
       media="(prefers-color-scheme: light)"
@@ -18,7 +18,7 @@
     />
     <img
       width="100%"
-      src="./assets/terminal-dark.svg?v=contrib-once-v9"
+      src="./assets/terminal-dark.svg?v=shared-paints-v10"
       alt="tingfeng347 — terminal dashboard: role, tech stack, a short typing session, yearly contributions, commits, repos, stars, language mix and a contribution snake"
     />
   </picture>

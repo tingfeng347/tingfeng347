@@ -478,6 +478,42 @@ def scope_contribution_css(css):
     return "".join(scoped)
 
 
+def share_contribution_paints(chart):
+    """Animate one solid paint per palette/phase, rather than every cube face.
+
+    A one-stop gradient is a solid color. Sharing it preserves the upstream
+    RGB interpolation and negative delays while avoiding hundreds of duplicate
+    CSS animations inside the dashboard's SVG image.
+    """
+    style = chart.find(f"{{{SVG_NS}}}style")
+    if style is None or not style.text:
+        return
+    tracks = re.compile(r"(@keyframes\s+(rb-[\w-]+)\s*\{)"
+                        r"((?:[^{}]*\{[^{}]*\}\s*)+)\}")
+    names = {match[2] for match in tracks.finditer(style.text)}
+    faces = [node for node in chart.iter() if node.get("class") in names]
+    if not faces:
+        return
+    style.text = tracks.sub(
+        lambda m: m[1] + re.sub(r"\bfill\s*:", "stop-color:", m[3]) + "}",
+        style.text,
+    )
+    defs = ET.SubElement(chart, f"{{{SVG_NS}}}defs")
+    paints = {}
+    for face in faces:
+        key = (face.get("class"), face.get("style", ""))
+        if key not in paints:
+            paint_id = f"contrib-paint-{len(paints)}"
+            paints[key] = paint_id
+            gradient = ET.SubElement(defs, f"{{{SVG_NS}}}linearGradient", id=paint_id)
+            ET.SubElement(gradient, f"{{{SVG_NS}}}stop", {
+                "offset": "0", "class": key[0], "style": key[1],
+            })
+        face.set("fill", f"url(#{paints[key]})")
+        del face.attrib["class"]
+        face.attrib.pop("style", None)
+
+
 def contribution_preview(theme, begin, filename=None):
     """Inline a scoped, single-play chart; nested SVG images can freeze SMIL."""
     filename = filename or random.choice(CONTRIBUTION_THEMES[theme])
@@ -495,6 +531,7 @@ def contribution_preview(theme, begin, filename=None):
     # renderer's default black fill.
     style.text = scope_contribution_css(style.text)
     style.text += f"\n.contrib-art .stroke-bg {{ stroke: {surface}; }}"
+    share_contribution_paints(chart)
     chart.set("class", "contrib-art")
     for name, value in dict(x="660", y="0", width="480", height="318.75",
                             preserveAspectRatio="xMidYMid meet").items():

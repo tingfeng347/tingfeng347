@@ -53,6 +53,7 @@ class IntroDockTests(unittest.TestCase):
                     if filename == 'profile-night-rainbow.svg':
                         self.assertNotIn('.contrib-art @keyframes', css)
                         self.assertRegex(css, r'\.contrib-art \.rb-l0-top\{fill:')
+                        self.assertNotIn('infinite', css)
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 
     def test_theme_is_selected_at_generation_time(self):

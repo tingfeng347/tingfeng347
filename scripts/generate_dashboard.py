@@ -478,7 +478,8 @@ def scope_contribution_css(css):
                 elif css[end] == "}":
                     depth -= 1
                 end += 1
-            scoped.append(css[cursor:end])
+            if not stripped.startswith("@keyframes"):
+                scoped.append(css[cursor:end])
             cursor = end
             continue
         close = css.find("}", opening + 1)
@@ -489,7 +490,12 @@ def scope_contribution_css(css):
         selectors = header.strip()
         prefixed = ",".join(f".contrib-art {selector.strip()}"
                             for selector in selectors.split(","))
-        scoped.append(f"{leading}{prefixed}{{{css[opening + 1:close + 1]}")
+        body = css[opening + 1:close]
+        # Rainbow sources animate every cell forever. The static fallback
+        # colors above preserve that theme without forcing hundreds of SVG
+        # layers to repaint continuously on the profile page.
+        body = re.sub(r'\banimation(?:-name)?\s*:\s*[^;}]+;?', '', body)
+        scoped.append(f"{leading}{prefixed}{{{body}}}")
         cursor = close + 1
     return "".join(scoped) + "".join(fallback_fills)
 

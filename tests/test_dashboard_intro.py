@@ -52,7 +52,8 @@ class IntroDockTests(unittest.TestCase):
                     self.assertIn('.contrib-art .fill-fg{', css)
                     if filename == 'profile-night-rainbow.svg':
                         self.assertNotIn('.contrib-art @keyframes', css)
-                        self.assertRegex(css, r'\.contrib-art \.rb-l0-top\{fill:')
+                        self.assertIn('.contrib-art .rb-l0-top{fill:#334155;}', css)
+                        self.assertIn('.contrib-art .rb-l4-top{fill:#d946ef;}', css)
                         self.assertNotIn('infinite', css)
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 

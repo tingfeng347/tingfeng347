@@ -442,6 +442,14 @@ CONTRIBUTION_THEMES = {
               "profile-south-season-animate.svg", "profile-gitblock.svg"),
 }
 
+STATIC_RAINBOW_FILLS = {
+    "rb-l0-top": "#334155", "rb-l0-left": "#263244", "rb-l0-right": "#1e293b",
+    "rb-l1-top": "#2563eb", "rb-l1-left": "#1d4ed8", "rb-l1-right": "#1e40af",
+    "rb-l2-top": "#06b6d4", "rb-l2-left": "#0891b2", "rb-l2-right": "#0e7490",
+    "rb-l3-top": "#22c55e", "rb-l3-left": "#16a34a", "rb-l3-right": "#15803d",
+    "rb-l4-top": "#d946ef", "rb-l4-left": "#c026d3", "rb-l4-right": "#a21caf",
+}
+
 
 def scope_contribution_css(css):
     """Prefix chart selectors without corrupting nested keyframe rules."""
@@ -456,7 +464,7 @@ def scope_contribution_css(css):
     for match in re.finditer(
         r'\.([\w-]+)\{[^{}]*animation(?:-name)?\s*:\s*([\w-]+)', css
     ):
-        fill = keyframe_fills.get(match.group(2))
+        fill = STATIC_RAINBOW_FILLS.get(match.group(1), keyframe_fills.get(match.group(2)))
         if fill:
             fallback_fills.append(f'.contrib-art .{match.group(1)}{{fill:{fill};}}')
 

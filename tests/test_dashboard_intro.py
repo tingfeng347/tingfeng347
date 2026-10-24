@@ -50,6 +50,9 @@ class IntroDockTests(unittest.TestCase):
                     css = chart.find('s:style', ns).text
                     self.assertIn('.contrib-art *{', css)
                     self.assertIn('.contrib-art .fill-fg{', css)
+                    if filename == 'profile-night-rainbow.svg':
+                        self.assertNotIn('.contrib-art @keyframes', css)
+                        self.assertRegex(css, r'\.contrib-art \.rb-l0-top\{fill:')
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 
     def test_theme_is_selected_at_generation_time(self):

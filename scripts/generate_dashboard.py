@@ -443,11 +443,14 @@ CONTRIBUTION_THEMES = {
 }
 
 STATIC_RAINBOW_FILLS = {
-    "rb-l0-top": "#334155", "rb-l0-left": "#263244", "rb-l0-right": "#1e293b",
-    "rb-l1-top": "#2563eb", "rb-l1-left": "#1d4ed8", "rb-l1-right": "#1e40af",
-    "rb-l2-top": "#06b6d4", "rb-l2-left": "#0891b2", "rb-l2-right": "#0e7490",
-    "rb-l3-top": "#22c55e", "rb-l3-left": "#16a34a", "rb-l3-right": "#15803d",
-    "rb-l4-top": "#d946ef", "rb-l4-left": "#c026d3", "rb-l4-right": "#a21caf",
+    # Muted jewel tones keep the grid legible against the night surface while
+    # giving the static fallback the same cross-colour depth as the reference
+    # rainbow animation (olive → wine → indigo → teal → green).
+    "rb-l0-top": "#59632e", "rb-l0-left": "#4b5426", "rb-l0-right": "#3b431f",
+    "rb-l1-top": "#8b4059", "rb-l1-left": "#75354c", "rb-l1-right": "#5d2c3d",
+    "rb-l2-top": "#4b5c9f", "rb-l2-left": "#40508e", "rb-l2-right": "#334073",
+    "rb-l3-top": "#3e9b9b", "rb-l3-left": "#358585", "rb-l3-right": "#2c6d6d",
+    "rb-l4-top": "#58b957", "rb-l4-left": "#4a9f4b", "rb-l4-right": "#3b803f",
 }
 
 

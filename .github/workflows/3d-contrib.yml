@@ -20,6 +20,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.repository_owner }}
 
+      - name: Keep rainbow chart static for README renderers
+        run: python scripts/staticize_contrib.py profile-3d-contrib/profile-night-rainbow.svg
+
       - name: Commit & Push
         run: |
           git config user.name github-actions

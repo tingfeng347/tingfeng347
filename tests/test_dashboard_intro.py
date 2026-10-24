@@ -52,8 +52,8 @@ class IntroDockTests(unittest.TestCase):
                     self.assertIn('.contrib-art .fill-fg{', css)
                     if filename == 'profile-night-rainbow.svg':
                         self.assertNotIn('.contrib-art @keyframes', css)
-                        self.assertIn('.contrib-art .rb-l0-top{fill:#334155;}', css)
-                        self.assertIn('.contrib-art .rb-l4-top{fill:#d946ef;}', css)
+                        self.assertIn('.contrib-art .rb-l0-top{fill:#59632e;}', css)
+                        self.assertIn('.contrib-art .rb-l4-top{fill:#58b957;}', css)
                         self.assertNotIn('infinite', css)
                     self.assertLessEqual(float(chart.get('x')) + float(chart.get('width')), dashboard.W - 20)
 
@@ -64,6 +64,14 @@ class IntroDockTests(unittest.TestCase):
                 svg = dashboard.contribution_preview(theme, 0)
                 choose.assert_called_once_with(choices)
                 self.assertIn(f'data-contrib-theme="{choices[-1]}"', svg)
+
+    def test_rainbow_source_is_static_and_colourful(self):
+        source = (dashboard.OUT.parent / 'profile-3d-contrib' /
+                  'profile-night-rainbow.svg').read_text(encoding='utf-8')
+        self.assertNotIn('animation:rb-', source)
+        self.assertNotIn('@keyframes rb-', source)
+        self.assertIn('.rb-l0-top{fill:#59632e;}', source)
+        self.assertIn('.rb-l4-top{fill:#58b957;}', source)
 
     def test_intro_docks_only_after_badges_then_terminal_starts(self):
         data = dict(top_starred=[], since='2023', languages=[], contributions=0,

@@ -443,6 +443,57 @@ CONTRIBUTION_THEMES = {
 }
 
 
+def scope_contribution_css(css):
+    """Prefix chart selectors without corrupting nested keyframe rules."""
+    keyframe_fills = {
+        match.group(1): match.group(2).strip()
+        for match in re.finditer(
+            r'@keyframes\s+([\w-]+)\s*\{\s*[^{}]*\{\s*fill\s*:\s*([^;}]+)',
+            css,
+        )
+    }
+    fallback_fills = []
+    for match in re.finditer(
+        r'\.([\w-]+)\{[^{}]*animation(?:-name)?\s*:\s*([\w-]+)', css
+    ):
+        fill = keyframe_fills.get(match.group(2))
+        if fill:
+            fallback_fills.append(f'.contrib-art .{match.group(1)}{{fill:{fill};}}')
+
+    scoped, cursor = [], 0
+    while cursor < len(css):
+        opening = css.find("{", cursor)
+        if opening < 0:
+            scoped.append(css[cursor:])
+            break
+        header = css[cursor:opening]
+        stripped = header.strip()
+        if stripped.startswith("@"):
+            # Preserve at-rules as a block. Contribution sources use this for
+            # keyframes; their inner percentage selectors must stay untouched.
+            depth, end = 1, opening + 1
+            while end < len(css) and depth:
+                if css[end] == "{":
+                    depth += 1
+                elif css[end] == "}":
+                    depth -= 1
+                end += 1
+            scoped.append(css[cursor:end])
+            cursor = end
+            continue
+        close = css.find("}", opening + 1)
+        if close < 0:
+            scoped.append(css[cursor:])
+            break
+        leading = header[:len(header) - len(header.lstrip())]
+        selectors = header.strip()
+        prefixed = ",".join(f".contrib-art {selector.strip()}"
+                            for selector in selectors.split(","))
+        scoped.append(f"{leading}{prefixed}{{{css[opening + 1:close + 1]}")
+        cursor = close + 1
+    return "".join(scoped) + "".join(fallback_fills)
+
+
 def contribution_preview(theme, begin, filename=None):
     """Inline a scoped, single-play chart; nested SVG images can freeze SMIL."""
     filename = filename or random.choice(CONTRIBUTION_THEMES[theme])
@@ -453,11 +504,12 @@ def contribution_preview(theme, begin, filename=None):
             chart.remove(child)
     surface = "#0d1117" if theme == "dark" else "#ffffff"
     style = chart.find(f"{{{SVG_NS}}}style")
-    # SVG styles share the outer document: scope even the universal font rule.
-    style.text = re.sub(r'([^{}]+)\{',
-                        lambda match: ','.join('.contrib-art ' + selector.strip()
-                                               for selector in match[1].split(',')) + '{',
-                        style.text)
+    # SVG styles share the outer document: scope regular selectors, but keep
+    # keyframe names and percentage selectors at the top level. Prefixing an
+    # entire stylesheet blindly turns `@keyframes foo { 0% { ... } }` into
+    # invalid selectors, which makes every contribution cell fall back to the
+    # renderer's default black fill.
+    style.text = scope_contribution_css(style.text)
     style.text += f"\n.contrib-art .stroke-bg {{ stroke: {surface}; }}"
     chart.set("class", "contrib-art")
     for name, value in dict(x="660", y="0", width="480", height="318.75",

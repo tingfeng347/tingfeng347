@@ -89,8 +89,8 @@ INTRO = [
 # tech-stack badges: (url_label, hex, logo, logoColor)
 BADGE_ROWS = [
     [("Python", "3776AB", "python", "white"), ("Java", "F89820", "openjdk", "white"),
-     ("TypeScript", "3178C6", "typescript", "white"), ("Node.js", "339933", "nodedotjs", "white"),
-     ("Shell", "4EAA25", "gnubash", "white")],
+     ("Go", "00ADD8", "go", "white"), ("Rust", "000000", "rust", "white"),
+     ("TypeScript", "3178C6", "typescript", "white"), ("Node.js", "339933", "nodedotjs", "white")],
     [("FastAPI", "009688", "fastapi", "white"), ("Vue.js", "4FC08D", "vuedotjs", "white"),
      ("React", "61DAFB", "react", "black"), ("LangGraph", "2C3E50", "langchain", "white"),
      ("LlamaIndex", "6A0DAD", "openai", "white"), ("PyTorch", "EE4C2C", "pytorch", "white")],
